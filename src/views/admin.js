@@ -1,3 +1,4 @@
+import { config } from '../config.js';
 import { html, raw, toString } from '../lib/html.js';
 import { can, ROLE_LABELS } from '../lib/auth.js';
 import {
@@ -31,7 +32,7 @@ export function layout({ user, title, body, path = '', counts = {}, flash, setti
   <meta name="robots" content="noindex">
   <title>${title} | لوحة التحكم</title>
   <link rel="preload" href="/static/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/static/css/admin.css">
+  <link rel="stylesheet" href="/static/css/admin.css?v=${config.assetVersion}">
 </head>
 <body>
   ${user ? html`

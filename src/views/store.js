@@ -35,7 +35,7 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
   <meta property="og:description" content="${description ?? settings.store_tagline}">
   <link rel="preload" href="/static/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/static/fonts/reem-kufi-arabic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/static/css/store.css">
+  <link rel="stylesheet" href="/static/css/store.css?v=${config.assetVersion}">
   ${jsonLd ? raw(`<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>`) : ''}
 </head>
 <body>
@@ -70,7 +70,7 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
     </div>
   </footer>
   <div id="chat-root"></div>
-  <script src="/static/js/chat.js" defer></script>
+  <script src="/static/js/chat.js?v=${config.assetVersion}" defer></script>
 </body>
 </html>`);
 }
