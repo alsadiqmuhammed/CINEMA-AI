@@ -30,13 +30,14 @@ export function layout({ user, title, body, path = '', counts = {}, flash, setti
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <title>${title} | لوحة التحكم</title>
+  <link rel="preload" href="/static/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/css/admin.css">
 </head>
 <body>
   ${user ? html`
   <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="القائمة">
   <aside class="sidebar">
-    <div class="side-brand">${settings?.store_name ?? 'المتجر'}<label for="nav-toggle" class="close">×</label></div>
+    <div class="side-brand"><span>${settings?.store_name ?? 'المتجر'}</span><small>لوحة التحكم</small><label for="nav-toggle" class="close" aria-label="إغلاق القائمة">×</label></div>
     <nav>
       ${NAV.filter(([, , perm]) => !perm || can(user, perm)).map(([href, label]) => html`
         <a href="${href}" class="${(href === '/admin' ? path === '/admin' : path.startsWith(href)) ? 'active' : ''}">
@@ -47,13 +48,13 @@ export function layout({ user, title, body, path = '', counts = {}, flash, setti
         </a>`)}
     </nav>
     <div class="side-user">
-      ${user.name} · ${ROLE_LABELS[user.role]}
+      <div class="who"><strong>${user.name}</strong><span>${ROLE_LABELS[user.role]}</span></div>
       <form method="post" action="/admin/logout"><input type="hidden" name="_csrf" value="${user.csrf_token}"><button class="link">تسجيل الخروج</button></form>
-      <a href="/" target="_blank" rel="noopener">عرض المتجر ↗</a>
+      <a href="/" target="_blank" rel="noopener">عرض المتجر</a>
     </div>
   </aside>` : ''}
   <main class="${user ? 'content' : 'content solo'}">
-    ${user ? html`<label for="nav-toggle" class="menu-btn">☰ القائمة</label>` : ''}
+    ${user ? html`<label for="nav-toggle" class="menu-btn">☰ القائمة</label>` : html`<div class="login-brand">${settings?.store_name ?? 'المتجر'}</div>`}
     <h1>${title}</h1>
     ${flash ? html`<p class="flash ${flash.type ?? ''}">${flash.message}</p>` : ''}
     ${body}

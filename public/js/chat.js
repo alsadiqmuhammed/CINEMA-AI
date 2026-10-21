@@ -1,16 +1,21 @@
 (() => {
   const root = document.getElementById('chat-root');
   if (!root) return;
+  const storeName = document.querySelector('.brand')?.textContent.trim() || 'المتجر';
 
   root.innerHTML = `
-    <button class="btn primary chat-fab" type="button" aria-expanded="false" aria-controls="chat-panel">💬 تحتاج مساعدة؟</button>
-    <section class="chat-panel" id="chat-panel" role="dialog" aria-label="المحادثة">
-      <div class="chat-head"><span>مساعد المتجر</span><button type="button" aria-label="إغلاق">×</button></div>
+    <button class="chat-fab" type="button" aria-expanded="false" aria-controls="chat-panel">
+      <span class="dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></span>
+      <span class="label">تحتاج مساعدة؟</span>
+    </button>
+    <section class="chat-panel" id="chat-panel" role="dialog" aria-label="المحادثة مع المساعد">
+      <div class="chat-head"><div><strong></strong><small>يجاوبك على المنتجات والطلبات</small></div><button type="button" aria-label="إغلاق المحادثة">×</button></div>
       <div class="chat-log" aria-live="polite"></div>
       <p class="chat-note" hidden></p>
       <form class="chat-form"><input name="message" autocomplete="off" maxlength="1000" placeholder="اكتب رسالتك…" aria-label="رسالتك" required><button class="btn primary" type="submit">إرسال</button></form>
     </section>`;
 
+  root.querySelector('.chat-head strong').textContent = `مساعد ${storeName}`;
   const fab = root.querySelector('.chat-fab');
   const panel = root.querySelector('.chat-panel');
   const log = root.querySelector('.chat-log');
@@ -81,7 +86,8 @@
     const button = form.querySelector('button');
     button.disabled = true;
     const typing = document.createElement('div');
-    typing.className = 'chat-msg bot';
+    typing.className = 'chat-msg bot typing';
+    typing.setAttribute('aria-label', 'المساعد يكتب');
     typing.textContent = '…';
     log.append(typing);
     log.scrollTop = log.scrollHeight;
