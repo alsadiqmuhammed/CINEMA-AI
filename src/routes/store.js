@@ -55,9 +55,14 @@ function setCart(res, cart) {
 }
 
 store.get('/', async (req, res) => {
-  const [newest, onSale, bestSellers] = await Promise.all([
-    products.listActive({ limit: 8 }), products.listActive({ onSale: true, limit: 8 }), products.bestSellers(8),
+  const [latest, onSale, bestSellers] = await Promise.all([
+    products.listActive({ limit: 16 }), products.listActive({ onSale: true, limit: 8 }), products.bestSellers(8),
   ]);
+  // Offers already have their own row; don't show the same products twice.
+  const onSaleIds = new Set(onSale.map((p) => p.id));
+  const fresh = latest.filter((p) => !onSaleIds.has(p.id));
+  // Full rows only (four to a row on desktop); a lone card on its own row reads as a mistake.
+  const newest = fresh.length >= 8 ? fresh.slice(0, 8) : fresh.length >= 4 ? fresh.slice(0, 4) : fresh;
   await render(req, res, views.home, { newest, onSale, bestSellers, meta: { canonical: '/' } });
 });
 
@@ -84,7 +89,8 @@ store.get('/c/:slug', async (req, res) => {
 });
 
 store.get('/search', async (req, res) => {
-  const q = String(req.query.q ?? '').slice(0, 100);
+  const q = String(req.query.q ?? '').trim().slice(0, 100);
+  if (!q) return res.redirect('/products');
   const items = q ? await products.listActive({ q, limit: 48 }) : [];
   await render(req, res, views.listing, { heading: `نتائج البحث: ${q}`, items, query: q, meta: { title: 'بحث' } });
 });
@@ -137,7 +143,11 @@ store.post('/cart/add', async (req, res) => {
 store.post('/cart/update', async (req, res) => {
   const cart = await carts.findOpen(req.cookies[CART_COOKIE]);
   if (cart) {
-    await carts.setItem(cart.id, Number(req.body.product_id), Math.max(0, Number(req.body.quantity) || 0)).catch(() => {});
+    // A typo ("abc", -5) must not empty the line; only a real number changes it (0 removes it).
+    const quantity = Number(req.body.quantity);
+    if (Number.isFinite(quantity)) {
+      await carts.setItem(cart.id, Number(req.body.product_id), Math.max(0, Math.trunc(quantity))).catch(() => {});
+    }
   }
   res.redirect('/cart');
 });
@@ -180,13 +190,16 @@ store.get('/order/:number', async (req, res) => {
   await render(req, res, views.orderPlaced, { order, meta: { title: 'تم استلام طلبك' } });
 });
 
-store.get('/track', async (req, res) => {
-  const values = { number: req.query.number, phone: req.query.phone };
+// The form posts, so the phone number stays out of URLs and history; GET still works for old links.
+async function trackPage(req, res, source) {
+  const values = { number: source.number, phone: source.phone };
   const order = values.number && values.phone ? await orders.track(values.number, values.phone) : null;
   await render(req, res, views.track, {
     order, values, notFound: Boolean(values.number && values.phone && !order), meta: { title: 'تتبع طلبك' },
   });
-});
+}
+store.get('/track', (req, res) => trackPage(req, res, req.query));
+store.post('/track', (req, res) => trackPage(req, res, req.body));
 
 store.get('/policies', async (req, res) => {
   await render(req, res, views.policies, { meta: { title: 'السياسات', canonical: '/policies' } });
@@ -201,3 +214,6 @@ store.get('/sitemap.xml', async (req, res) => {
   const urls = ['/', '/products', '/offers', '/policies', ...categories.map((c) => `/c/${encodeURIComponent(c.slug)}`), ...items.map((p) => `/p/${encodeURIComponent(p.slug)}`)];
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((u) => `<url><loc>${config.baseUrl}${u}</loc></url>`).join('')}</urlset>`);
 });
+
+// Anything else under the store gets the store's own not-found page.
+store.use((req, res) => render(req, res, views.notFound, { status: 404, meta: { title: 'الصفحة غير موجودة' } }));

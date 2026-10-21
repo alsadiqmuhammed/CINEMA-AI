@@ -68,7 +68,7 @@ describe('storefront and checkout', () => {
     const track = await visitor.get(`/track?number=${order.number}&phone=${encodeURIComponent('0770 123 4567')}`);
     assert.match(track.body, /طلب #/);
     const wrongPhone = await visitor.get(`/track?number=${order.number}&phone=07809999999`);
-    assert.match(wrongPhone.body, /لم نجد طلباً/);
+    assert.match(wrongPhone.body, /ما لكينا طلب/);
   });
 
   test('the last units cannot be sold twice when two customers check out at once', async () => {

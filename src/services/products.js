@@ -14,12 +14,19 @@ const STOPWORDS = new Set(['أبي', 'ابي', 'ابغى', 'أبغى', 'ابغي
   'شي', 'شيء', 'ممكن', 'لو', 'سمحت', 'من', 'عن', 'على', 'وش', 'ايش', 'شنو', 'بكم', 'كم', 'سعر', 'عطوني', 'عطني', 'ابحث', 'دور', 'أدور', 'ادور',
   'يا', 'و', 'او', 'أو', 'عدكم', 'عدك', 'اكو', 'أكو', 'شكد', 'بيش', 'اريده', 'أريده', 'داريد', 'دا', 'احتاج', 'أحتاج', 'تريد', 'the', 'a', 'i', 'want', 'do', 'you', 'have']);
 
+// Everyday Iraqi words for things the catalogue names in standard Arabic.
+const DIALECT = {
+  جنطة: 'حقيبة', جنطه: 'حقيبة', جنط: 'حقيبة', شنطة: 'حقيبة', شنطه: 'حقيبة', جزدان: 'محفظة', جزادين: 'محفظة',
+  برفان: 'عطر', برفانات: 'عطر', ريحة: 'عطر', ريحه: 'عطر', ريحات: 'عطر', عطور: 'عطر',
+  شموع: 'شمعة', هدايا: 'هدية', كادو: 'هدية', گادو: 'هدية', صوغة: 'هدية', صوغه: 'هدية',
+};
+
 export function searchTerms(q) {
-  return String(q ?? '')
+  const words = String(q ?? '')
     .toLowerCase()
     .split(/[^\p{L}\p{N}]+/u)
-    .filter((w) => w.length >= 2 && !STOPWORDS.has(w))
-    .slice(0, 8);
+    .filter((w) => w.length >= 2 && !STOPWORDS.has(w));
+  return [...new Set(words.flatMap((w) => (DIALECT[w] ? [w, DIALECT[w]] : [w])))].slice(0, 8);
 }
 
 export const SORTS = {

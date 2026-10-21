@@ -37,7 +37,8 @@ api.post('/chat', async (req, res) => {
   const text = String(req.body?.message ?? '').trim().slice(0, MAX_MESSAGE);
   if (!text) return res.status(400).json({ error: 'الرسالة فارغة' });
   const visitor = visitorId(req, res);
-  if (!limiter.take(`${visitor}:${req.ip}`)) {
+  // Keyed on the address only: the visitor cookie is the client's to reset, so it can't be part of the key.
+  if (!limiter.take(req.ip)) {
     return res.status(429).json({ error: 'رسائل كثيرة، حاول بعد قليل.' });
   }
 

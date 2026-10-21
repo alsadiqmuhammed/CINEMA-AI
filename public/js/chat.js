@@ -9,7 +9,7 @@
       <span class="label">تحتاج مساعدة؟</span>
     </button>
     <section class="chat-panel" id="chat-panel" role="dialog" aria-label="المحادثة مع المساعد">
-      <div class="chat-head"><div><strong></strong><small>يجاوبك على المنتجات والطلبات</small></div><button type="button" aria-label="إغلاق المحادثة">×</button></div>
+      <div class="chat-head"><div><strong></strong><small>مساعد آلي يجاوبك فوراً، ويحوّلك لموظف من تحتاج</small></div><button type="button" aria-label="إغلاق المحادثة">×</button></div>
       <div class="chat-log" aria-live="polite"></div>
       <p class="chat-note" hidden></p>
       <form class="chat-form"><input name="message" autocomplete="off" maxlength="1000" placeholder="اكتب رسالتك…" aria-label="رسالتك" required><button class="btn primary" type="submit">إرسال</button></form>

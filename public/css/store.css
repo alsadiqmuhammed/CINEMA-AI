@@ -438,3 +438,105 @@ progress::-moz-progress-bar { background: var(--flame); }
 @media (prefers-reduced-motion: reduce) {
   .btn:hover, .product-card:hover .arch { transform: none; }
 }
+
+/* ---- review round: team + taste findings ---- */
+/* grid: fixed columns so rows fill evenly (8 items = two full rows) */
+.grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* one or two products: wide cards side by side instead of a row with holes */
+.grid.few { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.grid.few .product-card { grid-template-columns: minmax(0, 220px) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 24px; align-items: center; background: var(--tile); border: var(--outline); border-radius: 24px; padding: 18px; }
+.grid.few .card-link { display: contents; }
+.grid.few .arch { grid-row: 1 / span 2; }
+.grid.few h3 { font-size: 1.3rem; align-self: end; margin: 0; }
+.grid.few .card-foot { align-self: start; }
+
+/* real pictures of the souq */
+.souq-band { margin-top: 64px; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+.souq-band figure { margin: 0; }
+.souq-band img { width: 100%; height: 100%; object-fit: cover; border: var(--outline); border-radius: 22px; background: var(--tile); }
+.souq-main img { aspect-ratio: 4 / 3; filter: grayscale(.15) contrast(1.05); }
+.souq-band figcaption { font-size: .88rem; color: var(--muted); margin-top: 8px; }
+.souq-text p { font-size: 1.15rem; line-height: 1.8; margin: 0 0 22px; max-width: 46ch; }
+.souq-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.souq-strip img { aspect-ratio: 3 / 4; border-radius: 16px; border-width: 2px; }
+.credits { font-size: .8rem; color: #cfc8bb; margin-top: 28px; line-height: 1.7; }
+.credits a { color: inherit; }
+
+/* cart stepper */
+.stepper { display: inline-flex; align-items: center; border: var(--outline); border-radius: 999px; overflow: hidden; background: #fff; }
+.stepper form { display: contents; }
+.stepper button { width: 44px; height: 44px; border: 0; background: var(--tile); font: inherit; font-size: 1.3rem; font-weight: 700; cursor: pointer; color: var(--ink); }
+.stepper button:hover { background: var(--gold); }
+.stepper button:disabled { opacity: .35; cursor: not-allowed; background: var(--tile); }
+.stepper output { min-width: 40px; text-align: center; font-weight: 700; }
+
+/* product thumbnails */
+.thumbs .thumb { padding: 0; border: 2px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; cursor: pointer; }
+.thumbs .thumb.current { border-color: var(--ink); }
+.thumbs .thumb img { border: 0; border-radius: 0; }
+
+/* entrance: sections rise once as they come into view (only when script runs and motion is welcome) */
+.reveal-ready main .shelf, .reveal-ready main .souq-band, .reveal-ready main .steps-band, .reveal-ready main .help-band, .reveal-ready main .product, .reveal-ready main .cart-layout { opacity: 0; transform: translateY(24px); transition: opacity .5s ease-out, transform .5s cubic-bezier(.2, .7, .2, 1); }
+.reveal-ready main .in { opacity: 1; transform: none; }
+.gate-name { animation: name-in .6s cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes name-in { from { opacity: 0; transform: translateY(18px) scale(.97); } }
+
+/* lines become tone and space */
+.cat-bar { border-top: 0; background: var(--tile); }
+.faq details { border: 0; background: var(--tile); border-radius: 14px; padding: 12px 16px; margin-bottom: 8px; }
+.site-footer { color: #fff; }
+.site-footer p { color: #fff; }
+
+/* touch targets and contrast */
+.header-links a, .footer-links a, .more { display: inline-flex; align-items: center; min-height: 44px; }
+.quick-add button { min-height: 44px; padding: 6px 16px 6px 12px; }
+.flag.few { background: var(--danger); }
+.chat-head { color: var(--ink); }
+.chat-head strong { color: var(--ink); }
+.chat-head small { opacity: 1; }
+.chat-note, .chat-msg.staff::before { color: var(--gold-deep); }
+select { appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23141210' stroke-width='3'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat left 14px center; padding-inline-end: 14px; padding-inline-start: 40px; }
+
+@media (max-width: 1000px) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .souq-band { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .grid.few { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid.few .product-card { grid-template-columns: 120px minmax(0, 1fr); padding: 12px; column-gap: 14px; }
+  .grid.few h3 { font-size: 1.05rem; }
+  /* first screen on a phone: a smaller name and the featured product as a compact card */
+  .gate-name { font-size: 4.2rem; }
+  .gate-window { display: flex; align-items: center; gap: 12px; width: 100%; background: #fff; border: var(--outline); border-radius: 18px; padding: 8px 12px; margin-top: 4px; }
+  .gate-window .arch { width: 60px; flex: none; border-width: 2px; box-shadow: none; }
+  .gate-caption { flex: 1; align-items: center; font-size: .95rem; }
+  .gate { gap: 18px; }
+  /* categories wrap instead of being cut at the edge */
+  .cat-row { flex-wrap: wrap; overflow: visible; gap: 4px 2px; }
+  .cat-row a { padding: 4px 10px; font-size: .9rem; }
+  .quick-add span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  .quick-add button { width: auto; height: auto; padding: 6px 12px 6px 10px; }
+  .souq-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gate-name { animation: none; }
+  .reveal-ready main .shelf, .reveal-ready main .souq-band, .reveal-ready main .steps-band, .reveal-ready main .help-band, .reveal-ready main .product, .reveal-ready main .cart-layout { opacity: 1; transform: none; transition: none; }
+}
+/* one product alone gets the full width */
+.grid.few:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
+.grid.few:has(> :only-child) .product-card { grid-template-columns: minmax(0, 260px) minmax(0, 1fr); }
+/* cards inside a revealed section rise one after another */
+.reveal-ready main .shelf .grid > *, .reveal-ready main .cat-grid > *, .reveal-ready main .how > *, .reveal-ready main .souq-strip > * { opacity: 0; transform: translateY(18px); transition: opacity .45s ease-out, transform .45s cubic-bezier(.2, .7, .2, 1); }
+.reveal-ready main .shelf.in .grid > *, .reveal-ready main .in .cat-grid > *, .reveal-ready main .in .how > *, .reveal-ready main .in .souq-strip > * { opacity: 1; transform: none; }
+/* nothing meant to be read under 13px */
+.credits { font-size: .85rem; }
+.flag, .badge { font-size: .82rem; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal-ready main .shelf .grid > *, .reveal-ready main .cat-grid > *, .reveal-ready main .how > *, .reveal-ready main .souq-strip > * { opacity: 1; transform: none; transition: none; }
+}
+/* skip link: out of the layout until it gets keyboard focus */
+.skip { top: 8px; clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; white-space: nowrap; }
+.skip:focus { clip-path: none; width: auto; height: auto; }

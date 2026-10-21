@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import { config } from './config.js';
@@ -11,6 +12,12 @@ import { api } from './routes/api.js';
 import { store } from './routes/store.js';
 import { webhooks } from './routes/webhooks.js';
 import * as uploads from './services/uploads.js';
+
+// Constant-time comparison (hashing first makes the lengths equal).
+function sameSecret(given, expected) {
+  const digest = (value) => createHash('sha256').update(value).digest();
+  return timingSafeEqual(digest(given), digest(expected));
+}
 
 export function createApp() {
   const app = express();
@@ -36,7 +43,7 @@ export function createApp() {
   // Scheduled run for hosts without a long-lived process (Vercel Cron).
   app.get('/cron/automation', async (req, res) => {
     const { cronSecret, enabled } = config.automation;
-    if (!cronSecret || req.get('authorization') !== `Bearer ${cronSecret}`) return res.status(404).end();
+    if (!cronSecret || !sameSecret(req.get('authorization') ?? '', `Bearer ${cronSecret}`)) return res.status(404).end();
     if (!enabled) return res.json({ skipped: 'automation disabled' });
     res.json((await worker.runLocked()) ?? { skipped: 'already running' });
   });
