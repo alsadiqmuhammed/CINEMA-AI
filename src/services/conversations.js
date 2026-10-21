@@ -1,5 +1,6 @@
 import { db } from '../db/pool.js';
 import { audit } from '../lib/audit.js';
+import { normalizeEmail, normalizePhone } from '../lib/format.js';
 import * as alerts from './alerts.js';
 import * as customers from './customers.js';
 
@@ -93,11 +94,44 @@ export async function setMode(conversationId, mode, actor) {
   return conversation;
 }
 
-export async function linkCustomer(conversationId, details, source) {
-  const customer = await customers.findOrCreate({ ...details, source });
-  if (!customer) return null;
-  await db.query('UPDATE conversations SET customer_id = $2 WHERE id = $1', [conversationId, customer.id]);
-  return customer;
+/**
+ * Saves contact details a customer gave in a chat. Only a WhatsApp sender's own number is proof of who is
+ * writing; a number or email typed into a chat could be anyone's. So typed details never attach the chat
+ * to an existing customer (that would show this person someone else's record, and mix their messages into
+ * it). They are kept on the conversation, marked unverified, and a number the store has never seen still
+ * becomes a new lead. Returns { customer, verified }; customer is null when the details stay on the chat.
+ */
+export async function captureContact(conversation, { name, phone, email, interests = [] }) {
+  const sender = conversation.channel === 'whatsapp' ? normalizePhone(conversation.external_id) : null;
+  const p = normalizePhone(phone) ?? sender;
+  const e = normalizeEmail(email);
+  if (!p && !e) return null;
+  const verified = Boolean(sender) && p === sender;
+  const cleanName = name?.trim() || null;
+
+  // Looked up by phone only: an email match would let a typed address claim someone's record.
+  let customer = p ? await db.one('SELECT * FROM customers WHERE phone = $1', [p]) : null;
+  const taken = customer || (e && await db.one('SELECT id FROM customers WHERE email = $1', [e]));
+  if (verified) {
+    customer = await customers.findOrCreate({ phone: p, name: cleanName, source: conversation.channel });
+  } else if (!taken && p) {
+    customer = await customers.findOrCreate({ phone: p, name: cleanName, source: conversation.channel });
+  } else {
+    customer = null;
+  }
+
+  await db.query(
+    `UPDATE conversations SET
+       customer_id = COALESCE($2, customer_id),
+       contact_name = COALESCE($3, contact_name), contact_phone = COALESCE($4, contact_phone),
+       contact_email = COALESCE($5, contact_email),
+       contact_interests = ARRAY(SELECT DISTINCT unnest(contact_interests || $6::text[])),
+       contact_unverified = contact_unverified OR $7
+     WHERE id = $1`,
+    [conversation.id, customer?.id ?? null, cleanName, p, e, interests, !verified],
+  );
+  if (customer && interests.length) await customers.addInterests(customer.id, interests);
+  return { customer, verified };
 }
 
 export async function get(id) {

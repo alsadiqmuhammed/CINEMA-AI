@@ -389,9 +389,16 @@ export function conversation({ user, conversation: cv }) {
       </section>
       <section class="card">
         <h2>معلومات</h2>
+        ${cv.contact_unverified ? html`<p class="flash error">الرقم أو البريد بهذه المحادثة كتبه الزائر بنفسه وما متحقق منه. لا تعطي معلومات عن طلبات أو حساب إلا بعد ما تتأكد إنه صاحبه (مثلاً بالاتصال على الرقم).</p>` : ''}
         <dl class="facts">
           <dt>القناة</dt><dd>${CHANNELS[cv.channel]}</dd>
           <dt>العميل</dt><dd>${cv.customer_id ? html`<a href="/admin/customers/${cv.customer_id}">${cv.customer_name || cv.customer_phone}</a>` : 'غير معروف'}</dd>
+          ${cv.contact_phone || cv.contact_email || cv.contact_name ? html`
+            <dt>من المحادثة</dt>
+            <dd>
+              ${[cv.contact_name, cv.contact_phone ? html`<span dir="ltr">${cv.contact_phone}</span>` : '', cv.contact_email].filter(Boolean).map((v, i) => html`${i ? '، ' : ''}${v}`)}
+              ${cv.contact_interests?.length ? html`<br><span class="muted">مهتم بـ: ${cv.contact_interests.join('، ')}</span>` : ''}
+            </dd>` : ''}
           <dt>الوضع</dt><dd>${{ bot: 'يرد المساعد', human: 'ينتظر موظف', closed: 'مغلقة' }[cv.mode]}</dd>
           ${cv.handoff_reason ? html`<dt>سبب التحويل</dt><dd>${cv.handoff_reason}</dd>` : ''}
         </dl>

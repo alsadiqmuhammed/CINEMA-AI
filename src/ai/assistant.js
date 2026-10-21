@@ -5,7 +5,6 @@ import { audit, AI_ACTOR } from '../lib/audit.js';
 import { CONVERSATION_LABELS, formatMoney, ORDER_STATUS, PAYMENT_STATUS } from '../lib/format.js';
 import * as carts from '../services/carts.js';
 import * as conversations from '../services/conversations.js';
-import * as customers from '../services/customers.js';
 import * as orders from '../services/orders.js';
 import * as products from '../services/products.js';
 import { getSettings } from '../services/settings.js';
@@ -203,15 +202,19 @@ async function runTool(name, input, ctx) {
       return { checkout_url: `${config.baseUrl}${url}` };
     }
     case 'save_customer_details': {
-      const customer = await conversations.linkCustomer(conversation.id, {
-        name: input.name, phone: input.phone ?? (conversation.channel === 'whatsapp' ? conversation.external_id : undefined), email: input.email,
-      }, conversation.channel);
-      if (!customer) return { error: 'نحتاج رقم هاتف أو بريد صحيح' };
-      conversation.customer_id = customer.id;
-      if (input.interests?.length) {
-        await customers.addInterests(customer.id, input.interests.slice(0, 10));
-      }
-      await audit({ actor: AI_ACTOR, action: 'customer.capture', entity: 'customer', entityId: customer.id, data: { conversation_id: conversation.id } });
+      const result = await conversations.captureContact(conversation, {
+        name: input.name, phone: input.phone, email: input.email, interests: (input.interests ?? []).slice(0, 10),
+      });
+      if (!result) return { error: 'نحتاج رقم هاتف أو بريد صحيح' };
+      if (result.customer) conversation.customer_id = result.customer.id;
+      await audit({
+        actor: AI_ACTOR,
+        action: result.verified ? 'customer.capture' : 'customer.capture_unverified',
+        entity: result.customer ? 'customer' : 'conversation',
+        entityId: result.customer?.id ?? conversation.id,
+        data: { conversation_id: conversation.id },
+      });
+      // The same answer either way, so a chat can't learn whether a number belongs to an existing customer.
       return { saved: true };
     }
     case 'classify_conversation': {
