@@ -18,12 +18,28 @@ const DEMO_PRODUCTS = [
     description: 'صندوق هدية يضم عطراً صغيراً وشمعة معطرة وبطاقة إهداء مكتوبة بخط اليد.' },
 ];
 
+const DEMO_ACCOUNTS = ['owner@store.local', 'staff@store.local', 'manager@store.local'];
+
+// Their passwords are in this repository. A production database must never keep them usable, so they are
+// switched off (not deleted, orders and audit history still point at them) and their sessions dropped.
+async function disableDemoAccounts() {
+  const admin = (process.env.ADMIN_EMAIL ?? '').trim().toLowerCase();
+  const off = await db.many(
+    `UPDATE users SET active = false WHERE email = ANY($1) AND email <> $2 AND active RETURNING id, email`,
+    [DEMO_ACCOUNTS, admin],
+  );
+  if (!off.length) return;
+  await db.query('DELETE FROM sessions WHERE user_id = ANY($1::bigint[])', [off.map((u) => u.id)]);
+  console.log(`disabled demo accounts: ${off.map((u) => u.email).join(', ')}`);
+}
+
 /**
  * demo: demo accounts with published passwords; never in production.
  * catalog: sample products, for previewing a fresh deployment (SEED_DEMO_CATALOG=true).
  */
 export async function seed({ demo = !config.isProduction, catalog = demo || process.env.SEED_DEMO_CATALOG === 'true' } = {}) {
   await migrate();
+  if (!demo) await disableDemoAccounts();
   const email = (process.env.ADMIN_EMAIL || (demo ? 'owner@store.local' : '')).trim().toLowerCase();
   const password = process.env.ADMIN_PASSWORD || (demo ? 'Demo-Owner-2026' : '');
   if (email && password && password.length < 10) {

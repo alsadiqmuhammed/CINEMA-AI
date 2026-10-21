@@ -7,7 +7,9 @@ function int(name, fallback) {
 
 export const config = {
   env: env.NODE_ENV ?? 'development',
-  isProduction: env.NODE_ENV === 'production',
+  // Hosted deployments count as production even if NODE_ENV does not reach the runtime (seen on Vercel):
+  // that gates demo accounts, secure cookies, webhook signatures and the APP_SECRET check.
+  isProduction: env.NODE_ENV === 'production' || Boolean(env.VERCEL || env.RENDER),
   port: int('PORT', 3000),
   secret: env.APP_SECRET ?? 'dev-only-secret-change-me',
   // Render sets RENDER_EXTERNAL_URL to the service's public address; Vercel sets the production host without a scheme.
