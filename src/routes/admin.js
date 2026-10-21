@@ -473,7 +473,7 @@ admin.post('/settings', async (req, res) => {
   const b = req.body;
   const text = (v) => String(v ?? '').trim();
   await saveSettings({
-    store_name: text(b.store_name) || 'متجري',
+    store_name: text(b.store_name) || 'سوگ',
     store_tagline: text(b.store_tagline),
     currency: ['IQD', 'USD', 'SAR', 'KWD', 'AED', 'QAR', 'BHD', 'OMR'].includes(b.currency) ? b.currency : 'IQD',
     shipping_fee: Math.max(0, Number(b.shipping_fee) || 0),

@@ -1,8 +1,8 @@
 import { db } from '../db/pool.js';
 
 export const DEFAULT_SETTINGS = {
-  store_name: 'متجري',
-  store_tagline: 'تسوّق بسهولة',
+  store_name: 'سوگ',
+  store_tagline: 'كلشي تحتاجه، يوصلك لباب البيت',
   currency: 'IQD',
   shipping_fee: 5000,
   free_shipping_over: 100000,
