@@ -77,7 +77,7 @@ export function home({ settings, categories, items }) {
 export function listing({ settings, heading, items, query }) {
   return html`
     <h1 class="page-title">${heading}</h1>
-    ${query !== undefined && !items.length ? html`<p class="empty">ما لقينا نتائج لـ "${query}". جرّب كلمة ثانية أو اسأل المساعد بالأسفل.</p>` : grid(items, settings.currency)}`;
+    ${query !== undefined && !items.length ? html`<p class="empty">لم نجد نتائج لـ "${query}". جرّب كلمة أخرى أو اسأل المساعد في الأسفل.</p>` : grid(items, settings.currency)}`;
 }
 
 export function product({ settings, product: p, related, csrf }) {
@@ -101,7 +101,7 @@ export function product({ settings, product: p, related, csrf }) {
               <label>الكمية <input type="number" name="quantity" value="1" min="1" max="${Math.min(p.stock, 20)}"></label>
               <button class="btn primary" type="submit">أضف للسلة</button>
             </form>
-            ${p.stock <= p.low_stock_at ? html`<p class="hint">باقي ${p.stock} فقط</p>` : ''}`
+            ${p.stock <= p.low_stock_at ? html`<p class="hint">متبقٍ ${p.stock} فقط</p>` : ''}`
           : html`<p class="tag muted">نفدت الكمية حالياً</p>`}
         <div class="description">${p.description.split(/\n+/).filter(Boolean).map((line) => html`<p>${line}</p>`)}</div>
         ${p.faq?.length ? html`<section class="faq"><h2>أسئلة شائعة</h2>${p.faq.map((f) => html`<details><summary>${f.q}</summary><p>${f.a}</p></details>`)}</section>` : ''}
@@ -131,7 +131,7 @@ export function productJsonLd(p, settings) {
 export function cart({ settings, view, csrf, error }) {
   const { items, subtotal, shipping, total } = view;
   if (!items.length) {
-    return html`<h1 class="page-title">السلة</h1><p class="empty">سلتك فاضية. <a href="/">تصفح المنتجات</a></p>`;
+    return html`<h1 class="page-title">السلة</h1><p class="empty">سلتك فارغة. <a href="/">تصفح المنتجات</a></p>`;
   }
   return html`
     <h1 class="page-title">السلة</h1>
@@ -172,10 +172,10 @@ export function checkout({ settings, view, csrf, error, values = {} }) {
       <form method="post" action="/checkout" class="card form">
         <input type="hidden" name="_csrf" value="${csrf}">
         <label>الاسم <input name="name" required autocomplete="name" value="${values.name ?? ''}"></label>
-        <label>رقم الجوال <input name="phone" required inputmode="tel" autocomplete="tel" dir="ltr" value="${values.phone ?? ''}"></label>
+        <label>رقم الهاتف <input name="phone" required inputmode="tel" autocomplete="tel" dir="ltr" placeholder="07XX XXX XXXX" value="${values.phone ?? ''}"></label>
         <label>البريد الإلكتروني (اختياري) <input name="email" type="email" autocomplete="email" dir="ltr" value="${values.email ?? ''}"></label>
-        <label>المدينة <input name="city" required autocomplete="address-level2" value="${values.city ?? ''}"></label>
-        <label>العنوان بالتفصيل <textarea name="address" required rows="2" autocomplete="street-address">${values.address ?? ''}</textarea></label>
+        <label>المحافظة <input name="city" required autocomplete="address-level1" placeholder="مثلاً: بغداد" value="${values.city ?? ''}"></label>
+        <label>العنوان بالتفصيل (المنطقة، المحلة، أقرب نقطة دالة) <textarea name="address" required rows="2" autocomplete="street-address">${values.address ?? ''}</textarea></label>
         <label>ملاحظات (اختياري) <textarea name="notes" rows="2">${values.notes ?? ''}</textarea></label>
         <fieldset>
           <legend>طريقة الدفع</legend>
@@ -201,7 +201,7 @@ export function orderPlaced({ settings, order }) {
       <p>رقم الطلب: <strong dir="ltr">${order.number}</strong></p>
       <p>الإجمالي: ${formatMoney(order.total, order.currency)} — ${PAYMENT_METHODS[order.payment_method]}</p>
       ${order.payment_method === 'bank_transfer' && settings.bank_details ? html`<div class="alert">بيانات التحويل:<br>${settings.bank_details}<br>نؤكد طلبك بعد التحقق من التحويل.</div>` : ''}
-      <p>تقدر تتابع حالة طلبك من <a href="/track?number=${order.number}">صفحة التتبع</a> برقم الطلب وجوالك.</p>
+      <p>يمكنك متابعة حالة طلبك من <a href="/track?number=${order.number}">صفحة التتبع</a> برقم الطلب ورقم هاتفك.</p>
     </section>`;
 }
 
@@ -210,10 +210,10 @@ export function track({ order, values = {}, notFound }) {
     <h1 class="page-title">تتبع طلبك</h1>
     <form method="get" action="/track" class="card form inline-form">
       <label>رقم الطلب <input name="number" required dir="ltr" value="${values.number ?? ''}"></label>
-      <label>رقم الجوال <input name="phone" required dir="ltr" inputmode="tel" value="${values.phone ?? ''}"></label>
+      <label>رقم الهاتف <input name="phone" required dir="ltr" inputmode="tel" value="${values.phone ?? ''}"></label>
       <button class="btn primary" type="submit">تتبع</button>
     </form>
-    ${notFound ? html`<p class="alert error">ما لقينا طلب بهذي البيانات.</p>` : ''}
+    ${notFound ? html`<p class="alert error">لم نجد طلباً بهذه البيانات.</p>` : ''}
     ${order ? html`
       <section class="card">
         <h2>طلب #${order.number}</h2>

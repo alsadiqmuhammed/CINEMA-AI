@@ -129,15 +129,15 @@ function systemPrompt(settings) {
   return `أنت مساعد المبيعات وخدمة العملاء لمتجر "${settings.store_name}". تتحدث مع العملاء عبر الموقع أو واتساب أو منصات التواصل.
 
 أسلوب الكلام: ${settings.brand_voice}
-رد بنفس لغة العميل ولهجته، برسائل قصيرة مناسبة للجوال.
+رد بنفس لغة العميل ولهجته، برسائل قصيرة مناسبة للموبايل.
 
 طريقة العمل:
 - معلوماتك عن المنتجات تأتي فقط من أدوات الكتالوج. ابحث قبل أن تذكر أي منتج أو سعر أو توفر، ولا تخترع منتجات أو مواصفات أو أسعاراً.
 - عند السؤال عن منتج اقترح الأنسب، ويمكنك اقتراح منتج مكمل أو بديل من نتائج الأدوات.
 - عندما يقرر العميل الشراء، أنشئ رابط إتمام الطلب وأرسله له. الدفع وإدخال العنوان يتمان في صفحة المتجر فقط، ولا تطلب أبداً بيانات بطاقة أو كلمات مرور.
-- إذا شارك العميل اسمه أو جواله أو اهتماماته فاحفظها.
+- إذا شارك العميل اسمه أو رقم هاتفه أو اهتماماته فاحفظها.
 - صنّف المحادثة عندما تتضح مرحلتها: مهتم، عميل محتمل، طلب مؤكد، متابعة، أو شكوى.
-- لتتبع طلب تحتاج رقم الطلب ورقم الجوال المسجل عليه.
+- لتتبع طلب تحتاج رقم الطلب ورقم الهاتف المسجل عليه.
 - حوّل المحادثة لموظف فوراً في: الاسترجاع والاستبدال، مشاكل الدفع، الشكاوى، طلب خصم أو استثناء، أي شيء غير موجود في الكتالوج أو السياسات، أو إذا طلب العميل التحدث مع شخص. أخبر العميل أن أحد الفريق سيتواصل معه.
 - لا تعِد بخصومات أو استرجاع أو مواعيد توصيل غير مذكورة في السياسات.
 
@@ -183,7 +183,7 @@ async function runTool(name, input, ctx) {
     }
     case 'get_order_status': {
       const order = await orders.track(input.order_number, input.phone);
-      if (!order) return { error: 'لم نجد طلباً بهذا الرقم والجوال' };
+      if (!order) return { error: 'لم نجد طلباً بهذا الرقم ورقم الهاتف' };
       return {
         number: order.number,
         status: ORDER_STATUS[order.status],
@@ -206,7 +206,7 @@ async function runTool(name, input, ctx) {
       const customer = await conversations.linkCustomer(conversation.id, {
         name: input.name, phone: input.phone ?? (conversation.channel === 'whatsapp' ? conversation.external_id : undefined), email: input.email,
       }, conversation.channel);
-      if (!customer) return { error: 'نحتاج رقم جوال أو بريد صحيح' };
+      if (!customer) return { error: 'نحتاج رقم هاتف أو بريد صحيح' };
       conversation.customer_id = customer.id;
       if (input.interests?.length) {
         await customers.addInterests(customer.id, input.interests.slice(0, 10));
@@ -258,14 +258,14 @@ export async function reply(conversation) {
       if (error instanceof Anthropic.APIError) {
         console.error('assistant API error', error.status, error.message);
         await conversations.handoff(conversation.id, 'تعذر الوصول لخدمة الذكاء الاصطناعي', AI_ACTOR);
-        return { text: 'عذراً، واجهنا مشكلة تقنية. حوّلت محادثتك لأحد أعضاء الفريق وبيتواصل معك قريباً.', actions: [{ type: 'handoff', reason: 'api_error' }] };
+        return { text: 'عذراً، صارت مشكلة تقنية. حوّلت محادثتك لواحد من الفريق وراح يتواصل وياك قريباً.', actions: [{ type: 'handoff', reason: 'api_error' }] };
       }
       throw error;
     }
 
     if (response.stop_reason === 'refusal') {
       await conversations.handoff(conversation.id, 'رفض المساعد الآلي الرد على الرسالة', AI_ACTOR);
-      return { text: 'حوّلت سؤالك لأحد أعضاء الفريق وبيرد عليك قريباً.', actions: [{ type: 'handoff', reason: 'refusal' }] };
+      return { text: 'حوّلت سؤالك لواحد من الفريق وراح يرد عليك قريباً.', actions: [{ type: 'handoff', reason: 'refusal' }] };
     }
 
     const toolUses = response.content.filter((block) => block.type === 'tool_use');
@@ -292,7 +292,7 @@ export async function reply(conversation) {
     messages.push({ role: 'user', content: results });
   }
   await conversations.handoff(conversation.id, 'المحادثة احتاجت خطوات أكثر من المسموح', AI_ACTOR);
-  return { text: 'حوّلت محادثتك لأحد أعضاء الفريق لإكمال طلبك.', actions };
+  return { text: 'حوّلت محادثتك لواحد من الفريق حتى يكمل وياك طلبك.', actions };
 }
 
 // Stored history → alternating user/assistant turns. Staff replies count as assistant turns.
@@ -311,8 +311,8 @@ function toApiMessages(history) {
 
 // --- Fallback when no API key is configured: keyword rules over the same tools. ---
 
-const HANDOFF_WORDS = ['استرجاع', 'استرداد', 'ارجاع', 'إرجاع', 'استبدال', 'شكوى', 'مشكلة', 'خصم', 'موظف', 'refund', 'complaint', 'human', 'agent'];
-const GREETINGS = ['السلام', 'مرحبا', 'هلا', 'اهلا', 'أهلا', 'hi', 'hello'];
+const HANDOFF_WORDS = ['استرجاع', 'استرداد', 'ارجاع', 'إرجاع', 'استبدال', 'تبديل', 'شكوى', 'مشكلة', 'خصم', 'تخفيض', 'موظف', 'refund', 'complaint', 'human', 'agent'];
+const GREETINGS = ['السلام', 'مرحبا', 'هلا', 'اهلا', 'أهلا', 'شلونك', 'hi', 'hello'];
 
 async function basicReply(conversation, ctx) {
   const history = await conversations.history(conversation.id, 1);
@@ -323,7 +323,7 @@ async function basicReply(conversation, ctx) {
     const isComplaint = ['شكوى', 'مشكلة', 'complaint'].some((w) => lower.includes(w));
     if (isComplaint) await runTool('classify_conversation', { label: 'complaint' }, ctx);
     await runTool('handoff_to_human', { reason: `طلب العميل: ${text.slice(0, 120)}` }, ctx);
-    return { text: 'وصلت رسالتك، حوّلتها لأحد أعضاء الفريق وبيتواصل معك قريباً.', actions: ctx.actions };
+    return { text: 'وصلت رسالتك، حوّلتها لواحد من الفريق وراح يتواصل وياك قريباً.', actions: ctx.actions };
   }
 
   const orderMatch = text.match(/\b([A-Z0-9]{7})\b/i);
@@ -334,18 +334,18 @@ async function basicReply(conversation, ctx) {
     return { text: `طلبك #${status.number}: ${status.status} (${status.payment}). الإجمالي ${status.total}.${status.tracking_number ? ` رقم الشحنة: ${status.tracking_number}` : ''}`, actions: ctx.actions };
   }
   if (/طلب|order|تتبع/i.test(text) && !orderMatch) {
-    return { text: 'لتتبع طلبك أرسل رقم الطلب ورقم الجوال المسجل عليه في رسالة واحدة.', actions: ctx.actions };
+    return { text: 'حتى أتتبع طلبك، دزلي رقم الطلب ورقم الهاتف المسجل عليه برسالة وحدة.', actions: ctx.actions };
   }
 
   if (GREETINGS.some((w) => lower.startsWith(w)) && text.length < 25) {
-    return { text: `أهلاً فيك في ${ctx.settings.store_name}! عن أي منتج تدوّر؟ اكتب اسمه أو نوعه وأساعدك.`, actions: ctx.actions };
+    return { text: `أهلاً بيك في ${ctx.settings.store_name}! شنو المنتج اللي تدوّر عليه؟ اكتب اسمه أو نوعه وأساعدك.`, actions: ctx.actions };
   }
 
   const found = await runTool('search_products', { query: text }, ctx);
   if (Array.isArray(found) && found.length) {
     await runTool('classify_conversation', { label: 'interested' }, ctx);
     const lines = found.slice(0, 4).map((p) => `• ${p.name}: ${p.price}${p.in_stock ? '' : ' (غير متوفر حالياً)'}\n${p.url}`);
-    return { text: `هذي المنتجات اللي لقيتها:\n${lines.join('\n')}\n\nتبي أجهز لك رابط الطلب لأي واحد منها؟`, actions: ctx.actions };
+    return { text: `هاي المنتجات اللي لكيتها:\n${lines.join('\n')}\n\nتريد أجهزلك رابط الطلب لأي واحد منها؟`, actions: ctx.actions };
   }
-  return { text: 'ما لقيت منتج مطابق. وضّح لي اللي تدوّر عليه أكثر، أو اكتب "موظف" وأحوّلك لأحد الفريق.', actions: ctx.actions };
+  return { text: 'ما لكيت منتج مطابق. وضّحلي شنو تريد أكثر، أو اكتب "موظف" وأحوّلك لواحد من الفريق.', actions: ctx.actions };
 }

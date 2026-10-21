@@ -143,7 +143,7 @@ function ordersTable(list, settings) {
 export function orders({ settings, list, filters }) {
   return html`
     <form class="filters" method="get">
-      <input name="q" placeholder="رقم الطلب، الاسم أو الجوال" value="${filters.q ?? ''}">
+      <input name="q" placeholder="رقم الطلب، الاسم أو الهاتف" value="${filters.q ?? ''}">
       <select name="status"><option value="">كل الحالات</option>${Object.entries(ORDER_STATUS).map(([k, v]) => html`<option value="${k}" ${filters.status === k ? raw('selected') : ''}>${v}</option>`)}</select>
       <select name="payment"><option value="">كل حالات الدفع</option>${Object.entries(PAYMENT_STATUS).map(([k, v]) => html`<option value="${k}" ${filters.payment === k ? raw('selected') : ''}>${v}</option>`)}</select>
       <button class="btn">تصفية</button>
@@ -158,7 +158,7 @@ export function order({ settings, user, order: o, nextStatuses }) {
         <h2>تفاصيل الطلب ${badge(ORDER_STATUS[o.status], o.status)}</h2>
         <dl class="facts">
           <dt>العميل</dt><dd><a href="/admin/customers/${o.customer_id}">${o.ship_name}</a></dd>
-          <dt>الجوال</dt><dd dir="ltr">${o.ship_phone}</dd>
+          <dt>الهاتف</dt><dd dir="ltr">${o.ship_phone}</dd>
           <dt>العنوان</dt><dd>${o.ship_city} — ${o.ship_address}</dd>
           <dt>طريقة الدفع</dt><dd>${PAYMENT_METHODS[o.payment_method]}</dd>
           <dt>حالة الدفع</dt><dd>${badge(PAYMENT_STATUS[o.payment_status], o.payment_status)}</dd>
@@ -237,8 +237,8 @@ export function productForm({ user, product: p, categories, allProducts = [], re
       <div class="form-grid">
         <label>اسم المنتج <input name="name" required value="${v.name ?? ''}"></label>
         <label>SKU <input name="sku" dir="ltr" value="${v.sku ?? ''}"></label>
-        <label>السعر <input name="price" type="number" step="0.001" min="0" required value="${v.price ?? ''}"></label>
-        <label>السعر قبل الخصم <input name="compare_at_price" type="number" step="0.001" min="0" value="${v.compare_at_price ?? ''}"></label>
+        <label>السعر <input name="price" type="number" step="any" min="0" required value="${v.price ?? ''}"></label>
+        <label>السعر قبل الخصم <input name="compare_at_price" type="number" step="any" min="0" value="${v.compare_at_price ?? ''}"></label>
         <label>المخزون <input name="stock" type="number" min="0" required value="${v.stock}"></label>
         <label>تنبيه عند مخزون أقل من <input name="low_stock_at" type="number" min="0" value="${v.low_stock_at}"></label>
         <label>التصنيف
@@ -296,7 +296,7 @@ export function productForm({ user, product: p, categories, allProducts = [], re
 export function customers({ settings, list, filters, sources }) {
   return html`
     <form class="filters" method="get">
-      <input name="q" placeholder="الاسم، الجوال أو البريد" value="${filters.q ?? ''}">
+      <input name="q" placeholder="الاسم، الهاتف أو البريد" value="${filters.q ?? ''}">
       <select name="segment">${Object.entries(SEGMENTS).map(([k, v]) => html`<option value="${k}" ${filters.segment === k ? raw('selected') : ''}>${v}</option>`)}</select>
       <select name="source"><option value="">كل المصادر</option>${sources.map((s) => html`<option value="${s}" ${filters.source === s ? raw('selected') : ''}>${CHANNELS[s] ?? s}</option>`)}</select>
       <input name="interest" placeholder="اهتمام" value="${filters.interest ?? ''}">
@@ -304,7 +304,7 @@ export function customers({ settings, list, filters, sources }) {
     </form>
     <section class="card">
       <p class="muted">${list.length} عميل</p>
-      ${table(['العميل', 'الجوال', 'المصدر', 'الطلبات', 'إجمالي المشتريات', 'آخر طلب', 'تسويق'], list.map((c) => [
+      ${table(['العميل', 'الهاتف', 'المصدر', 'الطلبات', 'إجمالي المشتريات', 'آخر طلب', 'تسويق'], list.map((c) => [
         html`<a href="/admin/customers/${c.id}">${c.name || 'بدون اسم'}</a>`,
         html`<span dir="ltr">${c.phone ?? ''}</span>`,
         CHANNELS[c.source] ?? c.source,
@@ -322,7 +322,7 @@ export function customer({ settings, user, customer: c }) {
       <section class="card">
         <h2>${c.name || 'عميل بدون اسم'}</h2>
         <dl class="facts">
-          <dt>الجوال</dt><dd dir="ltr">${c.phone ?? '—'}</dd>
+          <dt>الهاتف</dt><dd dir="ltr">${c.phone ?? '—'}</dd>
           <dt>البريد</dt><dd dir="ltr">${c.email ?? '—'}</dd>
           <dt>المصدر</dt><dd>${CHANNELS[c.source] ?? c.source}</dd>
           <dt>الطلبات</dt><dd>${c.order_count}</dd>
@@ -468,7 +468,7 @@ function approvalBody(a, settings) {
       <p class="muted">الموافقة تعتمد الخطة فقط. إطلاق الإعلان وصرف الميزانية يتم يدوياً من مدير الإعلانات في Meta.</p>`;
   }
   if (a.kind === 'broadcast') {
-    return html`<p>عدد المستلمين المحتملين: ${p.customer_ids.length} (فقط الموافقون على التسويق ولديهم جوال)</p>
+    return html`<p>عدد المستلمين المحتملين: ${p.customer_ids.length} (فقط الموافقون على التسويق ولديهم رقم هاتف)</p>
       <div class="card inset pre">${p.body}</div>${p.template ? html`<p>قالب واتساب: <code>${p.template}</code></p>` : ''}`;
   }
   if (a.kind === 'refund') {
@@ -557,11 +557,11 @@ export function settingsPage({ user, settings }) {
         <label>اسم المتجر <input name="store_name" required value="${settings.store_name}"></label>
         <label>الشعار النصي <input name="store_tagline" value="${settings.store_tagline}"></label>
         <label>العملة
-          <select name="currency">${['SAR', 'KWD', 'AED', 'QAR', 'BHD', 'OMR', 'IQD', 'USD'].map((c) => html`<option ${settings.currency === c ? raw('selected') : ''}>${c}</option>`)}</select>
+          <select name="currency">${['IQD', 'USD', 'SAR', 'KWD', 'AED', 'QAR', 'BHD', 'OMR'].map((c) => html`<option ${settings.currency === c ? raw('selected') : ''}>${c}</option>`)}</select>
         </label>
-        <label>رسوم التوصيل <input name="shipping_fee" type="number" step="0.001" min="0" value="${settings.shipping_fee}"></label>
-        <label>توصيل مجاني فوق (0 لإيقافه) <input name="free_shipping_over" type="number" step="0.001" min="0" value="${settings.free_shipping_over}"></label>
-        <label>جوال خدمة العملاء <input name="support_phone" dir="ltr" value="${settings.support_phone}"></label>
+        <label>رسوم التوصيل <input name="shipping_fee" type="number" step="any" min="0" value="${settings.shipping_fee}"></label>
+        <label>توصيل مجاني فوق (0 لإيقافه) <input name="free_shipping_over" type="number" step="any" min="0" value="${settings.free_shipping_over}"></label>
+        <label>هاتف خدمة العملاء <input name="support_phone" dir="ltr" value="${settings.support_phone}"></label>
         <label>بريد خدمة العملاء <input name="support_email" dir="ltr" value="${settings.support_email}"></label>
       </div>
       <label>بيانات التحويل البنكي (اتركها فارغة لإخفاء التحويل البنكي) <textarea name="bank_details" rows="2">${settings.bank_details}</textarea></label>

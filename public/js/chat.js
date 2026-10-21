@@ -44,7 +44,7 @@
 
   function setMode(mode) {
     note.hidden = mode !== 'human';
-    note.textContent = 'تم تحويلك لأحد أعضاء الفريق، بيرد عليك هنا.';
+    note.textContent = 'تم تحويلك لواحد من الفريق، راح يرد عليك هنا.';
   }
 
   async function poll() {
@@ -63,7 +63,7 @@
     clearInterval(pollTimer);
     if (state) {
       poll().then(() => {
-        if (!log.children.length) addMessage({ id: -1, role: 'bot', content: 'هلا! اسألني عن أي منتج، أو أرسل رقم طلبك وجوالك لتتبعه.' });
+        if (!log.children.length) addMessage({ id: -1, role: 'bot', content: 'هلا بيك! اسألني عن أي منتج، أو دزلي رقم طلبك ورقم هاتفك حتى أتتبعه.' });
       });
       pollTimer = setInterval(poll, 8000);
       input.focus();

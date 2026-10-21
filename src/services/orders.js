@@ -38,9 +38,9 @@ function orderNumber() {
  */
 export async function placeOrder(cartToken, form, { actor = { type: 'customer' } } = {}) {
   const phone = normalizePhone(form.phone);
-  if (!phone) throw new OrderError('رقم الجوال غير صحيح');
+  if (!phone) throw new OrderError('رقم الهاتف غير صحيح');
   for (const field of ['name', 'city', 'address']) {
-    if (!String(form[field] ?? '').trim()) throw new OrderError('يرجى تعبئة الاسم والمدينة والعنوان');
+    if (!String(form[field] ?? '').trim()) throw new OrderError('يرجى تعبئة الاسم والمحافظة والعنوان');
   }
   if (!['cod', 'bank_transfer'].includes(form.payment_method)) throw new OrderError('طريقة الدفع غير متاحة');
   const settings = await getSettings();

@@ -18,7 +18,7 @@ after(async () => {
   await pool.end();
 });
 
-async function placeOrder(phone = '0501234567', sku = 'DEMO-5') {
+async function placeOrder(phone = '07701234567', sku = 'DEMO-5') {
   const product = await productBySku(sku);
   const { visitor, csrf } = await visitorWithCart(server.base, product.id, 1);
   const res = await visitor.post('/checkout', checkoutForm(csrf, { phone }));
@@ -50,11 +50,11 @@ describe('chat assistant (template mode, no API key)', () => {
   });
 
   test('order status needs the order number and the matching phone', async () => {
-    const order = await placeOrder('0533333333');
+    const order = await placeOrder('07733333333');
     const visitor = new Client(server.base);
-    const ok = (await visitor.request('/api/chat', { method: 'POST', json: { message: `طلبي ${order.number} وجوالي 0533333333` } })).json();
+    const ok = (await visitor.request('/api/chat', { method: 'POST', json: { message: `طلبي ${order.number} ورقمي 07733333333` } })).json();
     assert.match(ok.messages[1].content, /جديد/);
-    const wrong = (await visitor.request('/api/chat', { method: 'POST', json: { message: `طلبي ${order.number} وجوالي 0544444444` } })).json();
+    const wrong = (await visitor.request('/api/chat', { method: 'POST', json: { message: `طلبي ${order.number} ورقمي 07744444444` } })).json();
     assert.match(wrong.messages[1].content, /لم نجد/);
   });
 });
@@ -105,7 +105,7 @@ describe('admin permissions and approvals', () => {
   });
 
   test('payments and refunds: staff cannot mark paid; refund needs approval', async () => {
-    const order = await placeOrder('0555555555');
+    const order = await placeOrder('07755555555');
     const staff = new Client(server.base);
     await staff.login('staff@store.local', 'Demo-Staff-2026');
     assert.equal((await staff.adminPost(`/admin/orders/${order.id}/payment`, { payment_status: 'paid' })).status, 403);
@@ -124,7 +124,7 @@ describe('admin permissions and approvals', () => {
 
   test('order status follows allowed transitions and cancelling restocks', async () => {
     const before = (await productBySku('DEMO-5')).stock;
-    const order = await placeOrder('0566666666');
+    const order = await placeOrder('07766666666');
     const staff = new Client(server.base);
     await staff.login('staff@store.local', 'Demo-Staff-2026');
     const skip = await staff.adminPost(`/admin/orders/${order.id}/status`, { status: 'delivered' });
@@ -150,12 +150,12 @@ describe('automation and WhatsApp', () => {
   test('abandoned carts with a phone get one reminder, held as skipped while WhatsApp is not connected', async () => {
     const product = await productBySku('DEMO-6');
     const { visitor, csrf } = await visitorWithCart(server.base, product.id, 1);
-    await visitor.post('/cart/contact', { _csrf: csrf, phone: '0577777777' });
-    await db.query(`UPDATE carts SET updated_at = now() - interval '5 hours' WHERE contact_phone = '0577777777'`);
+    await visitor.post('/cart/contact', { _csrf: csrf, phone: '07777777777' });
+    await db.query(`UPDATE carts SET updated_at = now() - interval '5 hours' WHERE contact_phone = '9647777777777'`);
 
     await runOnce();
     await runOnce();
-    const messages = await db.many(`SELECT * FROM outbox WHERE purpose = 'abandoned_cart' AND recipient = '0577777777'`);
+    const messages = await db.many(`SELECT * FROM outbox WHERE purpose = 'abandoned_cart' AND recipient = '9647777777777'`);
     assert.equal(messages.length, 1);
     assert.equal(messages[0].status, 'skipped');
     assert.match(messages[0].body, /\/cart\/open\//);
@@ -164,13 +164,13 @@ describe('automation and WhatsApp', () => {
   test('incoming WhatsApp messages are stored once, linked to a customer, and answered', async () => {
     const payload = {
       entry: [{ changes: [{ value: {
-        contacts: [{ wa_id: '966500000001', profile: { name: 'خالد' } }],
-        messages: [{ from: '966500000001', id: 'wamid.1', type: 'text', text: { body: 'عندكم عطر؟' } }],
+        contacts: [{ wa_id: '9647500000001', profile: { name: 'خالد' } }],
+        messages: [{ from: '9647500000001', id: 'wamid.1', type: 'text', text: { body: 'عندكم عطر؟' } }],
       } }] }],
     };
     await handleWhatsApp(payload);
     await handleWhatsApp(payload); // Meta retry
-    const conversation = await db.one(`SELECT * FROM conversations WHERE channel = 'whatsapp' AND external_id = '966500000001'`);
+    const conversation = await db.one(`SELECT * FROM conversations WHERE channel = 'whatsapp' AND external_id = '9647500000001'`);
     const messages = await db.many('SELECT role FROM messages WHERE conversation_id = $1 ORDER BY id', [conversation.id]);
     assert.deepEqual(messages.map((m) => m.role), ['customer', 'bot']);
     const customer = await db.one('SELECT * FROM customers WHERE id = $1', [conversation.customer_id]);

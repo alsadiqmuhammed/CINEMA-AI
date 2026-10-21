@@ -33,13 +33,13 @@ export async function abandonedCarts() {
   );
   for (const cart of due) {
     const template = await whatsappTemplateFor(cart.contact_phone, config.whatsapp.abandonedCartTemplate);
-    const greeting = cart.customer_name ? `هلا ${cart.customer_name}` : 'هلا فيك';
+    const greeting = cart.customer_name ? `هلا ${cart.customer_name}` : 'هلا بيك';
     await outbox.enqueue({
       channel: 'whatsapp',
       recipient: cart.contact_phone,
       customerId: cart.customer_id,
       purpose: 'abandoned_cart',
-      body: `${greeting}! لاحظنا إن سلتك في ${settings.store_name} ما اكتملت. منتجاتك محجوزة لك هنا: ${config.baseUrl}/cart/open/${cart.token}`,
+      body: `${greeting}! لاحظنا طلبك من ${settings.store_name} بعده ما مكتمل. منتجاتك محفوظة إلك هنا: ${config.baseUrl}/cart/open/${cart.token}`,
       template,
       dedupeKey: `abandoned-cart-${cart.id}-${cart.updated_at.getTime()}`,
     });
@@ -64,7 +64,7 @@ export async function reviewRequests() {
       recipient: order.ship_phone,
       customerId: order.customer_id,
       purpose: 'review_request',
-      body: `شكراً لطلبك من ${settings.store_name}! يهمنا رأيك في طلب #${order.number}، كيف كانت تجربتك؟ ردك يساعدنا نتحسن.`,
+      body: `شكراً لطلبك من ${settings.store_name}! يهمنا رأيك بطلب #${order.number}، شلون كانت تجربتك؟ رأيك يساعدنا نتحسن.`,
       template,
       dedupeKey: `review-${order.id}`,
     });

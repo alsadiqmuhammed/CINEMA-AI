@@ -13,8 +13,8 @@ export const config = {
   baseUrl: (env.APP_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, ''),
   databaseUrl: env.DATABASE_URL ?? 'postgres://store:store@localhost:5432/store',
   databaseSsl: env.DATABASE_SSL ?? '',
-  // Local numbers starting with 0 are stored in international form (needed by WhatsApp), e.g. 966.
-  defaultCountryCode: (env.DEFAULT_COUNTRY_CODE ?? '').replace(/\D/g, ''),
+  // Local numbers starting with 0 are stored in international form (needed by WhatsApp): 07XX… → 9647XX…
+  defaultCountryCode: (env.DEFAULT_COUNTRY_CODE ?? '964').replace(/\D/g, ''),
   uploadsDir: env.UPLOADS_DIR ?? new URL('../uploads/', import.meta.url).pathname,
 
   ai: {
@@ -40,6 +40,6 @@ export const config = {
     abandonedCartHours: int('ABANDONED_CART_HOURS', 3),
     orderDelayHours: int('ORDER_DELAY_HOURS', 48),
     reviewRequestDays: int('REVIEW_REQUEST_DAYS', 3),
-    vipThreshold: int('VIP_LIFETIME_VALUE', 500),
+    vipThreshold: int('VIP_LIFETIME_VALUE', 500000),
   },
 };

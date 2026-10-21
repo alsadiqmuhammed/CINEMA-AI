@@ -39,17 +39,18 @@ describe('storefront and checkout', () => {
   });
 
   test('checkout creates order, customer and CRM event, and decrements stock', async () => {
-    const product = await productBySku('DEMO-1'); // 149, below the 300 free-shipping threshold when ×2
+    const product = await productBySku('DEMO-1'); // 45,000 ×2 is below the 100,000 free-shipping threshold
     const { visitor, csrf } = await visitorWithCart(server.base, product.id, 2);
     const res = await visitor.post('/checkout', checkoutForm(csrf, { marketing_opt_in: '1' }));
     assert.equal(res.status, 302);
     assert.match(res.location, /^\/order\/[A-Z0-9]{7}\?t=/);
 
     const order = await db.one('SELECT * FROM orders ORDER BY id DESC LIMIT 1');
-    assert.equal(order.subtotal, 298);
-    assert.equal(order.shipping_fee, 25);
-    assert.equal(order.total, 323);
-    assert.equal(order.ship_phone, '0501234567');
+    assert.equal(order.subtotal, 90000);
+    assert.equal(order.shipping_fee, 5000);
+    assert.equal(order.total, 95000);
+    assert.equal(order.currency, 'IQD');
+    assert.equal(order.ship_phone, '9647701234567', 'local number stored with the Iraq country code');
     assert.equal((await productBySku('DEMO-1')).stock, product.stock - 2);
 
     const customer = await db.one('SELECT * FROM customers WHERE id = $1', [order.customer_id]);
@@ -64,10 +65,10 @@ describe('storefront and checkout', () => {
     // Order number alone is not enough to view the confirmation page.
     assert.equal((await visitor.get(`/order/${order.number}`)).status, 404);
 
-    const track = await visitor.get(`/track?number=${order.number}&phone=${encodeURIComponent('050 123 4567')}`);
+    const track = await visitor.get(`/track?number=${order.number}&phone=${encodeURIComponent('0770 123 4567')}`);
     assert.match(track.body, /طلب #/);
-    const wrongPhone = await visitor.get(`/track?number=${order.number}&phone=0559999999`);
-    assert.match(wrongPhone.body, /ما لقينا طلب/);
+    const wrongPhone = await visitor.get(`/track?number=${order.number}&phone=07809999999`);
+    assert.match(wrongPhone.body, /لم نجد طلباً/);
   });
 
   test('the last units cannot be sold twice when two customers check out at once', async () => {
@@ -75,8 +76,8 @@ describe('storefront and checkout', () => {
     const a = await visitorWithCart(server.base, product.id, 3);
     const b = await visitorWithCart(server.base, product.id, 3);
     const [ra, rb] = await Promise.all([
-      a.visitor.post('/checkout', checkoutForm(a.csrf, { phone: '0511111111' })),
-      b.visitor.post('/checkout', checkoutForm(b.csrf, { phone: '0522222222' })),
+      a.visitor.post('/checkout', checkoutForm(a.csrf, { phone: '07711111111' })),
+      b.visitor.post('/checkout', checkoutForm(b.csrf, { phone: '07722222222' })),
     ]);
     const statuses = [ra.status, rb.status].sort();
     assert.deepEqual(statuses, [302, 422]);
@@ -92,7 +93,7 @@ describe('storefront and checkout', () => {
     const { visitor, csrf } = await visitorWithCart(server.base, product.id, 1);
     const res = await visitor.post('/checkout', checkoutForm(csrf, { phone: '12' }));
     assert.equal(res.status, 422);
-    assert.match(res.body, /رقم الجوال غير صحيح/);
+    assert.match(res.body, /رقم الهاتف غير صحيح/);
     assert.match((await visitor.get('/cart')).body, /شمعة معطرة بالعنبر/);
   });
 });

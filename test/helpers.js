@@ -4,7 +4,7 @@ process.env.NODE_ENV = 'test';
 process.env.AUTOMATION_ENABLED = 'false';
 // Never call the real API from tests; ai.test.js points the SDK at a local mock instead.
 if (process.env.TEST_AI_MOCK !== '1') process.env.ANTHROPIC_API_KEY = '';
-process.env.DEFAULT_COUNTRY_CODE = '';
+process.env.DEFAULT_COUNTRY_CODE = '964';
 
 const { pool, db } = await import('../src/db/pool.js');
 const { seed } = await import('../src/db/seed.js');
@@ -98,5 +98,5 @@ export async function visitorWithCart(base, productId, quantity = 1) {
 }
 
 export const checkoutForm = (csrf, extra = {}) => ({
-  _csrf: csrf, name: 'سارة أحمد', phone: '0501234567', city: 'الرياض', address: 'حي النخيل، شارع 12', payment_method: 'cod', ...extra,
+  _csrf: csrf, name: 'سارة أحمد', phone: '07701234567', city: 'بغداد', address: 'الكرادة، قرب ساحة الواثق', payment_method: 'cod', ...extra,
 });

@@ -479,7 +479,7 @@ admin.post('/settings', async (req, res) => {
   await saveSettings({
     store_name: text(b.store_name) || 'متجري',
     store_tagline: text(b.store_tagline),
-    currency: ['SAR', 'KWD', 'AED', 'QAR', 'BHD', 'OMR', 'IQD', 'USD'].includes(b.currency) ? b.currency : 'SAR',
+    currency: ['IQD', 'USD', 'SAR', 'KWD', 'AED', 'QAR', 'BHD', 'OMR'].includes(b.currency) ? b.currency : 'IQD',
     shipping_fee: Math.max(0, Number(b.shipping_fee) || 0),
     free_shipping_over: Math.max(0, Number(b.free_shipping_over) || 0),
     support_phone: text(b.support_phone),

@@ -12,7 +12,7 @@ const SEARCH_TEXT = 'product_search_text(p.name, p.description, p.tags)';
 // Conversational filler that should not be searched for ("أبي عطر" → "عطر").
 const STOPWORDS = new Set(['أبي', 'ابي', 'ابغى', 'أبغى', 'ابغي', 'أبغي', 'اريد', 'أريد', 'ابا', 'أبا', 'عندكم', 'عندك', 'هل', 'في', 'فيه',
   'شي', 'شيء', 'ممكن', 'لو', 'سمحت', 'من', 'عن', 'على', 'وش', 'ايش', 'شنو', 'بكم', 'كم', 'سعر', 'عطوني', 'عطني', 'ابحث', 'دور', 'أدور', 'ادور',
-  'يا', 'و', 'او', 'أو', 'the', 'a', 'i', 'want', 'do', 'you', 'have']);
+  'يا', 'و', 'او', 'أو', 'عدكم', 'عدك', 'اكو', 'أكو', 'شكد', 'بيش', 'اريده', 'أريده', 'داريد', 'دا', 'احتاج', 'أحتاج', 'تريد', 'the', 'a', 'i', 'want', 'do', 'you', 'have']);
 
 export function searchTerms(q) {
   return String(q ?? '')

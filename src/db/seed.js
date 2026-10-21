@@ -4,17 +4,17 @@ import { migrate } from './migrate.js';
 import { db, pool } from './pool.js';
 
 const DEMO_PRODUCTS = [
-  { name: 'عطر مسك الليل', category: 'العطور', price: 149, compare: 189, stock: 25, image: 'perfume', tags: ['مسك', 'عطر', 'رجالي', 'نسائي'],
+  { name: 'عطر مسك الليل', category: 'العطور', price: 45000, compare: 55000, stock: 25, image: 'perfume', tags: ['مسك', 'عطر', 'رجالي', 'نسائي'],
     description: 'عطر مسك ناعم يدوم طويلاً، مناسب للاستخدام اليومي والمناسبات.\n• حجم 100 مل\n• ثبات يصل إلى 12 ساعة' },
-  { name: 'دهن عود كمبودي', category: 'العطور', price: 320, stock: 6, image: 'oud', tags: ['عود', 'دهن', 'فاخر'],
+  { name: 'دهن عود كمبودي', category: 'العطور', price: 95000, stock: 6, image: 'oud', tags: ['عود', 'دهن', 'فاخر'],
     description: 'دهن عود كمبودي أصلي برائحة دافئة وعميقة.\n• 3 مل\n• مناسب للمناسبات الخاصة' },
-  { name: 'شمعة معطرة بالعنبر', category: 'المنزل', price: 59, stock: 40, image: 'candle', tags: ['شمعة', 'عنبر', 'هدية'],
+  { name: 'شمعة معطرة بالعنبر', category: 'المنزل', price: 15000, stock: 40, image: 'candle', tags: ['شمعة', 'عنبر', 'هدية'],
     description: 'شمعة من شمع الصويا الطبيعي بعطر العنبر، تشتعل حتى 40 ساعة.' },
-  { name: 'حقيبة جلد يدوية', category: 'الإكسسوارات', price: 260, stock: 3, image: 'bag', tags: ['حقيبة', 'جلد', 'نسائي'],
+  { name: 'حقيبة جلد يدوية', category: 'الإكسسوارات', price: 75000, stock: 3, image: 'bag', tags: ['حقيبة', 'جلد', 'نسائي'],
     description: 'حقيبة يد من الجلد الطبيعي بخياطة يدوية وجيوب داخلية منظمة.' },
-  { name: 'محفظة رجالية نحيفة', category: 'الإكسسوارات', price: 89, stock: 30, image: 'wallet', tags: ['محفظة', 'رجالي', 'جلد'],
+  { name: 'محفظة رجالية نحيفة', category: 'الإكسسوارات', price: 25000, stock: 30, image: 'wallet', tags: ['محفظة', 'رجالي', 'جلد'],
     description: 'محفظة جلدية نحيفة تتسع لـ 8 بطاقات مع حماية RFID.' },
-  { name: 'صندوق هدايا فاخر', category: 'الهدايا', price: 199, stock: 15, image: 'gift', tags: ['هدية', 'عطر', 'شمعة'],
+  { name: 'صندوق هدايا فاخر', category: 'الهدايا', price: 60000, stock: 15, image: 'gift', tags: ['هدية', 'عطر', 'شمعة'],
     description: 'صندوق هدية يضم عطراً صغيراً وشمعة معطرة وبطاقة إهداء مكتوبة بخط اليد.' },
 ];
 
@@ -51,7 +51,7 @@ export async function seed({ demo = !config.isProduction } = {}) {
       `INSERT INTO products (slug, sku, name, description, category_id, price, compare_at_price, stock, status, tags, seo_title, faq)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', $9, $3, $10) RETURNING id`,
       [p.name.replace(/\s+/g, '-'), `DEMO-${i + 1}`, p.name, p.description, categoryIds[p.category], p.price, p.compare ?? null, p.stock, p.tags,
-        JSON.stringify([{ q: 'كم مدة التوصيل؟', a: 'من 2 إلى 5 أيام عمل.' }])],
+        JSON.stringify([{ q: 'كم مدة التوصيل؟', a: 'من 1 إلى 2 يوم داخل بغداد، ومن 2 إلى 4 أيام لباقي المحافظات.' }])],
     );
     productIds[p.image] = row.id;
     await db.query('INSERT INTO product_images (product_id, url, alt) VALUES ($1, $2, $3)', [row.id, `/static/img/demo-${p.image}.svg`, p.name]);
