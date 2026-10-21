@@ -16,7 +16,9 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('startup failed', error);
     res.statusCode = 503;
-    return res.end('Service unavailable');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Retry-After', '5');
+    return res.end('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>لحظة وحدة</title><div dir="rtl" style="font-family:system-ui,sans-serif;max-width:28rem;margin:20vh auto;padding:0 16px;text-align:center"><h1>لحظة وحدة</h1><p>المتجر ديصحى هسة. حدّث الصفحة بعد ثواني.</p><p><a href="">حدّث الصفحة</a></p></div>');
   }
   // Vercel's Node helpers attach their own req.body/query/cookies and res.redirect/status/send/json, which
   // shadow Express's (res.redirect defaults to 307, so a form POST is replayed at the redirect target).
