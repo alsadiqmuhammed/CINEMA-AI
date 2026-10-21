@@ -1,4 +1,4 @@
-/* سوگ — the Ishtar Gate: lapis glazed brick, glaze gold, one arch motif. */
+/* سوگ — sticker colours: black outline and hard shadow, yolk and flame orange; the arch stays the one motif. */
 @font-face { font-family: "Plex Arabic"; src: url("/static/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F; }
 @font-face { font-family: "Plex Arabic"; src: url("/static/fonts/ibm-plex-sans-arabic-arabic-500-normal.woff2") format("woff2"); font-weight: 500; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F; }
 @font-face { font-family: "Plex Arabic"; src: url("/static/fonts/ibm-plex-sans-arabic-arabic-700-normal.woff2") format("woff2"); font-weight: 700; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F; }
@@ -9,20 +9,17 @@
 @font-face { font-family: "Reem Kufi"; src: url("/static/fonts/reem-kufi-arabic-700-normal.woff2") format("woff2"); font-weight: 700; font-display: swap; }
 
 :root {
-  --lapis: #1d3b8b; --lapis-deep: #142b66; --gold: #e2a52b; --gold-deep: #b97f0f; --kashi: #1c8c96;
-  --ink: #0f1e3d; --plaster: #f5f6fa; --surface: #ffffff; --tile: #e8ecf6; --line: #d8deec; --muted: #5a6582;
-  --danger: #b42318; --ok: #157347;
+  /* --lapis is the structural colour (headings, filled controls); --gold is the buying colour. */
+  --lapis: #141210; --lapis-deep: #000000; --gold: #fec20f; --gold-deep: #c4470a; --kashi: #e2560d;
+  --flame: #f7651a; --amber: #f9a51b; --comb: #e8261c;
+  --ink: #141210; --plaster: #ffffff; --surface: #ffffff; --tile: #fff4d4; --line: #e6ddcb; --muted: #5d564c;
+  --danger: #c21d14; --ok: #157347;
   --text: var(--ink); --bg: var(--plaster);
+  --outline: 2.5px solid var(--ink); --pop: 4px 4px 0 var(--ink); --pop-sm: 3px 3px 0 var(--ink);
   --display: "Reem Kufi", "Plex Arabic", "Segoe UI", Tahoma, sans-serif;
   --body: "Plex Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
-  --brick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='32'%3E%3Crect width='64' height='32' fill='%2318357c'/%3E%3Crect x='1' y='1' width='30' height='14' rx='2' fill='%231f3e90'/%3E%3Crect x='33' y='1' width='30' height='14' rx='2' fill='%231c3a8a'/%3E%3Crect x='-15' y='17' width='30' height='14' rx='2' fill='%23203f91'/%3E%3Crect x='17' y='17' width='30' height='14' rx='2' fill='%231b3987'/%3E%3Crect x='49' y='17' width='30' height='14' rx='2' fill='%23203f91'/%3E%3C/svg%3E");
+  --brick: none;
   color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #eef1f8; --bg: #0c1730; --surface: #13224a; --tile: #1a2b57; --line: #263a6c; --muted: #9aa8c8;
-    --lapis: #7d9bf0; --gold: #f0b443; --gold-deep: #f0b443; --danger: #ff8a7a; --ok: #5fd39a; color-scheme: dark;
-  }
 }
 
 * { box-sizing: border-box; }
@@ -279,8 +276,81 @@ body:has(.buy-form) .chat-fab { bottom: 16px; }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
-@media (prefers-color-scheme: dark) {
-  /* light lapis is for text on dark; filled surfaces keep a deep lapis so white text stays readable */
-  .chip.active, .chat-fab, .btn.primary, .chat-msg.customer, .steps li.done::before, .steps li.done + li.done::after { background-color: #2a4db0; border-color: #2a4db0; }
-  .steps li.current::before { background: var(--gold); }
+
+/* sticker pass: black outline + hard offset shadow on the things you can touch */
+.site-header { border-bottom: var(--outline); }
+.search input { background: #fff; border: var(--outline); }
+.search input:focus { box-shadow: var(--pop-sm); border-color: var(--ink); }
+input, select, textarea { border: var(--outline); }
+input:focus, select:focus, textarea:focus { border-color: var(--ink); box-shadow: var(--pop-sm); }
+.cart-link { background: var(--gold); border: var(--outline); }
+.badge { background: var(--comb); color: #fff; border: 2px solid var(--ink); line-height: 16px; }
+.btn { border: var(--outline); box-shadow: var(--pop); transition: transform .12s, box-shadow .12s; }
+.btn:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--ink); }
+.btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+.btn.buy:hover { background: var(--gold); }
+.btn.ghost:hover { border-color: var(--ink); color: var(--ink); }
+.btn.small { box-shadow: var(--pop-sm); }
+.chip { border: var(--outline); }
+.chip:hover { border-color: var(--ink); color: var(--ink); background: var(--tile); }
+
+.gate { background: var(--amber); color: var(--ink); border: var(--outline); box-shadow: 6px 6px 0 var(--ink); }
+.gate::after { display: none; }
+.gate-name { color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 5px 5px 0 var(--ink); }
+.gate-promises svg, .gate-caption b { color: var(--ink); }
+.gate-caption b { background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 0 10px; }
+.gate-window .arch, .arch.large { border: var(--outline); box-shadow: 6px 6px 0 var(--ink); }
+
+.arch { border: var(--outline); box-shadow: var(--pop); }
+.product-card .arch { transition: transform .12s, box-shadow .12s; }
+.product-card:hover .arch { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+.product-card:hover h3 { color: var(--ink); }
+.flag { border: 2px solid var(--ink); }
+.flag.sale { background: var(--gold); }
+.price s { text-decoration-color: var(--comb); text-decoration-thickness: 2px; }
+.section-title, .page-title, .info h1, .faq h2, .summary h2, legend, .prose h2, .tracked h2, .placed h1 { color: var(--ink); }
+.assurances { background: var(--tile); border: var(--outline); border-radius: 18px; padding: 18px; }
+.faq summary::after { color: var(--flame); }
+
+.cart-thumb { border: 2px solid var(--ink); }
+.summary, .panel { border: var(--outline); box-shadow: 6px 6px 0 var(--ink); }
+.summary .total { border-top: 2px dashed var(--ink); }
+.free-ship { border: 2px solid var(--ink); }
+progress { border: 2px solid var(--ink); height: 10px; background: #fff; }
+progress::-webkit-progress-bar { background: #fff; }
+progress::-webkit-progress-value { background: var(--flame); }
+progress::-moz-progress-bar { background: var(--flame); }
+.choice { border: var(--outline); }
+.choice:has(input:checked) { background: var(--tile); box-shadow: var(--pop-sm); }
+.choice input, .check input { accent-color: var(--flame); }
+
+.arch.seal { background: var(--flame); border: var(--outline); }
+.arch.seal span { color: #fff; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+.steps li::before { border: 2px solid var(--ink); background: #fff; }
+.steps li.current::before { background: var(--gold); }
+
+.site-footer { background: var(--ink); color: #f3efe6; border-top: 6px solid var(--flame); }
+.site-footer .brand { color: var(--gold); }
+.footer-promises svg { color: var(--gold); }
+.footer-links a:hover { color: var(--gold); }
+
+.chat-fab { background: var(--gold); color: var(--ink); border: var(--outline); box-shadow: var(--pop); }
+.chat-fab .dot { background: var(--flame); color: #fff; border: 2px solid var(--ink); }
+.chat-panel { border: var(--outline); box-shadow: 7px 7px 0 var(--ink); }
+.chat-head { background: var(--flame); border-bottom: var(--outline); }
+.chat-head strong { color: #fff; }
+.chat-head button { background: #fff; color: var(--ink); border: 2px solid var(--ink); }
+.chat-log { background: var(--tile); }
+.chat-msg { border: 2px solid var(--ink); }
+.chat-msg.staff::before { color: var(--gold-deep); }
+.chat-msg a { color: var(--gold-deep); }
+.chat-form { border-top: var(--outline); }
+
+@media (max-width: 640px) {
+  .gate-name { -webkit-text-stroke-width: 2.5px; text-shadow: 4px 4px 0 var(--ink); }
+  .arch { box-shadow: var(--pop-sm); }
+  .buy-form { border-top: var(--outline); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn:hover, .product-card:hover .arch { transform: none; }
 }

@@ -27,7 +27,7 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1d3b8b">
+  <meta name="theme-color" content="#f9a51b">
   <title>${pageTitle}</title>
   <meta name="description" content="${description ?? settings.store_tagline}">
   ${canonical ? html`<link rel="canonical" href="${config.baseUrl}${canonical}">` : ''}
