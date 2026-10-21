@@ -11,7 +11,19 @@ function sslOption() {
   return undefined;
 }
 
-export const pool = new pg.Pool({ connectionString: config.databaseUrl, ssl: sslOption(), max: 10 });
+// Serverless instances freeze between requests and Neon closes idle connections, so a pooled socket can be
+// dead on reuse. Short idle lifetimes and hard timeouts make such a request fail in seconds instead of hanging.
+export const pool = new pg.Pool({
+  connectionString: config.databaseUrl,
+  ssl: sslOption(),
+  max: 10,
+  idleTimeoutMillis: 10_000,
+  connectionTimeoutMillis: 10_000,
+  query_timeout: 25_000,
+  keepAlive: true,
+});
+// An idle client dropped by the server emits here; without a listener it would crash the process.
+pool.on('error', (error) => console.error('idle database client error', error.message));
 
 export function query(text, params) {
   return pool.query(text, params);
