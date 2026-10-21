@@ -10,6 +10,7 @@ import { admin } from './routes/admin.js';
 import { api } from './routes/api.js';
 import { store } from './routes/store.js';
 import { webhooks } from './routes/webhooks.js';
+import * as uploads from './services/uploads.js';
 
 export function createApp() {
   const app = express();
@@ -39,7 +40,11 @@ export function createApp() {
   app.use(express.urlencoded({ extended: true, limit: '200kb' }));
   app.use(express.json({ limit: '50kb' }));
   app.use('/static', express.static(new URL('../public/', import.meta.url).pathname, { maxAge: config.isProduction ? '7d' : 0 }));
-  app.use('/uploads', express.static(config.uploadsDir, { maxAge: '30d', index: false }));
+  app.get('/uploads/:name', async (req, res, next) => {
+    const file = await uploads.find(req.params.name);
+    if (!file) return next();
+    res.set({ 'Content-Type': file.content_type, 'Cache-Control': 'public, max-age=31536000, immutable' }).send(file.data);
+  });
 
   app.use('/api', api);
   app.use('/admin', admin);

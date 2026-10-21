@@ -1,0 +1,42 @@
+# Render Blueprint: one web service and one PostgreSQL database.
+# Render → New → Blueprint → pick this repository. It asks for the values marked sync: false.
+services:
+  - type: web
+    name: cinema-ai-store
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: npm ci --omit=dev
+    # seed creates the tables and the owner account; it is safe to run on every start.
+    startCommand: node src/db/seed.js && node src/server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cinema-ai-db
+          property: connectionString
+      - key: APP_SECRET
+        generateValue: true
+      - key: DEFAULT_COUNTRY_CODE
+        value: "964"
+      # Sample products so the new store is not empty. Set to false once real products are added.
+      - key: SEED_DEMO_CATALOG
+        value: "true"
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+databases:
+  - name: cinema-ai-db
+    plan: free
+    region: frankfurt
+    databaseName: store
+    user: store

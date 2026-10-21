@@ -10,12 +10,12 @@ export const config = {
   isProduction: env.NODE_ENV === 'production',
   port: int('PORT', 3000),
   secret: env.APP_SECRET ?? 'dev-only-secret-change-me',
-  baseUrl: (env.APP_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, ''),
+  // Render sets RENDER_EXTERNAL_URL to the service's public address.
+  baseUrl: (env.APP_BASE_URL || env.RENDER_EXTERNAL_URL || 'http://localhost:3000').replace(/\/$/, ''),
   databaseUrl: env.DATABASE_URL ?? 'postgres://store:store@localhost:5432/store',
   databaseSsl: env.DATABASE_SSL ?? '',
   // Local numbers starting with 0 are stored in international form (needed by WhatsApp): 07XX… → 9647XX…
   defaultCountryCode: (env.DEFAULT_COUNTRY_CODE ?? '964').replace(/\D/g, ''),
-  uploadsDir: env.UPLOADS_DIR ?? new URL('../uploads/', import.meta.url).pathname,
 
   ai: {
     apiKey: env.ANTHROPIC_API_KEY ?? '',

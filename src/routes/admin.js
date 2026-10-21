@@ -7,7 +7,7 @@ import { aiEnabled } from '../ai/client.js';
 import { channelFor, channelStatus } from '../channels/index.js';
 import { audit, userActor } from '../lib/audit.js';
 import {
-  can, createSession, destroySession, hashPassword, loadSession, SESSION_COOKIE, token, verifyPassword,
+  can, createSession, destroySession, hashPassword, loadSession, SESSION_COOKIE, verifyPassword,
 } from '../lib/auth.js';
 import { RateLimiter } from '../lib/rate-limit.js';
 import * as alerts from '../services/alerts.js';
@@ -17,6 +17,7 @@ import * as customers from '../services/customers.js';
 import * as orders from '../services/orders.js';
 import * as outbox from '../services/outbox.js';
 import * as products from '../services/products.js';
+import * as uploads from '../services/uploads.js';
 import { getSettings, saveSettings } from '../services/settings.js';
 import { dashboardStats } from '../services/stats.js';
 import * as views from '../views/admin.js';
@@ -25,16 +26,10 @@ export const admin = Router();
 
 const loginLimiter = new RateLimiter({ limit: 10, windowMs: 15 * 60_000 });
 
-const IMAGE_TYPES = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
-
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: config.uploadsDir,
-    // The extension comes from the allowed type, never from the uploaded name.
-    filename: (req, file, cb) => cb(null, `${Date.now().toString(36)}-${token(8)}${IMAGE_TYPES[file.mimetype]}`),
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024, files: 10 },
-  fileFilter: (req, file, cb) => cb(null, file.mimetype in IMAGE_TYPES),
+  fileFilter: (req, file, cb) => cb(null, file.mimetype in uploads.IMAGE_TYPES),
 });
 
 const list = (value) => String(value ?? '').split(/[,،]/).map((s) => s.trim()).filter(Boolean);
@@ -99,7 +94,7 @@ function checkCsrf(req, res, next) {
 admin.post('/products/:id/images', upload.array('images', 10), checkCsrf, async (req, res) => {
   requirePermission(req, 'products.write');
   for (const file of req.files ?? []) {
-    await products.addImage(Number(req.params.id), `/uploads/${file.filename}`);
+    await products.addImage(Number(req.params.id), await uploads.saveImage(file.buffer, file.mimetype));
   }
   back(res, `/admin/products/${req.params.id}`, `تم رفع ${req.files?.length ?? 0} صورة`);
 });
@@ -255,7 +250,8 @@ admin.post('/products/:id', async (req, res) => {
 
 admin.post('/products/:id/images/:imageId/delete', async (req, res) => {
   requirePermission(req, 'products.write');
-  await products.removeImage(Number(req.params.id), Number(req.params.imageId));
+  const removed = await products.removeImage(Number(req.params.id), Number(req.params.imageId));
+  await uploads.removeByUrl(removed?.url);
   back(res, `/admin/products/${req.params.id}`, 'تم حذف الصورة');
 });
 

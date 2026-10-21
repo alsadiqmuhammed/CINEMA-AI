@@ -18,10 +18,17 @@ const DEMO_PRODUCTS = [
     description: 'صندوق هدية يضم عطراً صغيراً وشمعة معطرة وبطاقة إهداء مكتوبة بخط اليد.' },
 ];
 
-export async function seed({ demo = !config.isProduction } = {}) {
+/**
+ * demo: demo accounts with published passwords; never in production.
+ * catalog: sample products, for previewing a fresh deployment (SEED_DEMO_CATALOG=true).
+ */
+export async function seed({ demo = !config.isProduction, catalog = demo || process.env.SEED_DEMO_CATALOG === 'true' } = {}) {
   await migrate();
-  const email = (process.env.ADMIN_EMAIL ?? (demo ? 'owner@store.local' : '')).toLowerCase();
-  const password = process.env.ADMIN_PASSWORD ?? (demo ? 'Demo-Owner-2026' : '');
+  const email = (process.env.ADMIN_EMAIL || (demo ? 'owner@store.local' : '')).trim().toLowerCase();
+  const password = process.env.ADMIN_PASSWORD || (demo ? 'Demo-Owner-2026' : '');
+  if (email && password && password.length < 10) {
+    throw new Error('ADMIN_PASSWORD must be at least 10 characters');
+  }
   if (email && password) {
     await db.query(
       `INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, 'owner') ON CONFLICT (email) DO NOTHING`,
@@ -31,12 +38,11 @@ export async function seed({ demo = !config.isProduction } = {}) {
   } else {
     console.log('set ADMIN_EMAIL and ADMIN_PASSWORD to create the owner account');
   }
-  if (!demo) return;
-
-  if (!(await db.one(`SELECT 1 FROM users WHERE email = 'staff@store.local'`))) {
+  if (demo && !(await db.one(`SELECT 1 FROM users WHERE email = 'staff@store.local'`))) {
     await db.query(`INSERT INTO users (name, email, password_hash, role) VALUES ('موظف تجريبي', 'staff@store.local', $1, 'staff')`,
       [await hashPassword('Demo-Staff-2026')]);
   }
+  if (!catalog) return;
   if ((await db.one('SELECT COUNT(*)::int AS n FROM products')).n > 0) return;
 
   const categoryIds = {};

@@ -133,6 +133,26 @@ describe('admin permissions and approvals', () => {
     assert.equal((await productBySku('DEMO-5')).stock, before);
   });
 
+  test('uploaded images are stored in the database and served with their type', async () => {
+    const owner = new Client(server.base);
+    await owner.login('owner@store.local', 'Demo-Owner-2026');
+    const png = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010802000000907753de0000000c4944415408d763f8ffff3f0005fe02fea7d6a4c50000000049454e44ae426082', 'hex');
+    const form = new FormData();
+    form.append('_csrf', owner.csrf);
+    form.append('images', new Blob([png], { type: 'image/png' }), 'photo.png');
+    form.append('images', new Blob(['<script>alert(1)</script>'], { type: 'text/html' }), 'evil.html');
+    const res = await fetch(`${server.base}/admin/products/1/images`, {
+      method: 'POST', body: form, redirect: 'manual', headers: { cookie: [...owner.cookies].map(([k, v]) => `${k}=${v}`).join('; ') },
+    });
+    assert.equal(res.status, 302);
+    const images = await db.many(`SELECT url FROM product_images WHERE product_id = 1 AND url LIKE '/uploads/%'`);
+    assert.equal(images.length, 1, 'the HTML file is rejected');
+    assert.match(images[0].url, /\.png$/);
+    const served = await fetch(server.base + images[0].url);
+    assert.equal(served.headers.get('content-type'), 'image/png');
+    assert.deepEqual(Buffer.from(await served.arrayBuffer()), png);
+  });
+
   test('every admin page renders for the owner', async () => {
     const owner = new Client(server.base);
     await owner.login('owner@store.local', 'Demo-Owner-2026');

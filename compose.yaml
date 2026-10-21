@@ -19,11 +19,8 @@ services:
       DATABASE_URL: postgres://store:${POSTGRES_PASSWORD:-store}@db:5432/store
     ports:
       - "3000:3000"
-    volumes:
-      - uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
 volumes:
   db-data:
-  uploads:
