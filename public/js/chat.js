@@ -77,6 +77,17 @@
 
   fab.addEventListener('click', () => open(!panel.classList.contains('open')));
   root.querySelector('.chat-head button').addEventListener('click', () => open(false));
+  // Any "ask the assistant" button on the page opens the same panel.
+  document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-open-chat]')) open(true);
+  });
+
+  // The "added to cart" toast comes from ?added=1; drop it from the address so a refresh doesn't repeat it.
+  const params = new URLSearchParams(location.search);
+  if (params.has('added')) {
+    params.delete('added');
+    history.replaceState(null, '', location.pathname + (params.size ? `?${params}` : '') + location.hash);
+  }
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();

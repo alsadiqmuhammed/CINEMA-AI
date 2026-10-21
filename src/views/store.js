@@ -1,6 +1,7 @@
 import { config } from '../config.js';
 import { html, raw, toString } from '../lib/html.js';
 import { formatDate, formatMoney, ORDER_STATUS, PAYMENT_METHODS, PAYMENT_STATUS } from '../lib/format.js';
+import { SORTS } from '../services/products.js';
 
 // Small inline icons (stroke follows currentColor); inline SVG keeps them inside the CSP.
 const icon = {
@@ -8,6 +9,8 @@ const icon = {
   bag: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>'),
   truck: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h11v10H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>'),
   cash: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>'),
+  plus: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'),
+  chat: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>'),
   gift: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7c-1.5-3-5-3-5-1s3 1 5 1c2 0 5 1 5-1s-3.5-2-5 1"/></svg>'),
 };
 
@@ -20,7 +23,7 @@ function promises(settings) {
   return list;
 }
 
-export function layout({ settings, title, description, body, cartCount = 0, canonical, jsonLd }) {
+export function layout({ settings, title, description, body, cartCount = 0, canonical, jsonLd, categories = [], path = '', added = false }) {
   const pageTitle = title ? `${title} | ${settings.store_name}` : settings.store_name;
   return '<!doctype html>' + toString(html`
 <html lang="ar" dir="rtl">
@@ -52,7 +55,15 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
         <a href="/cart" class="cart-link" aria-label="السلة، فيها ${cartCount} منتج">${icon.bag}<span class="badge" id="cart-count">${cartCount}</span></a>
       </nav>
     </div>
+    <nav class="cat-bar" aria-label="الأقسام">
+      <div class="wrap cat-row">
+        <a href="/products" class="${path === '/products' ? 'active' : ''}">كل المنتجات</a>
+        <a href="/offers" class="offers ${path === '/offers' ? 'active' : ''}">العروض</a>
+        ${categories.map((c) => html`<a href="/c/${encodeURIComponent(c.slug)}" class="${path === `/c/${c.slug}` || decodeURIComponent(path) === `/c/${c.slug}` ? 'active' : ''}">${c.name}</a>`)}
+      </div>
+    </nav>
   </header>
+  ${added ? html`<div class="toast" role="status">${icon.bag}<span>انضاف للسلة</span><a href="/cart">شوف السلة</a><a href="/checkout" class="toast-go">أكمل الطلب</a></div>` : ''}
   <main id="main" class="wrap">${body}</main>
   <footer class="site-footer">
     <div class="wrap footer-grid">
@@ -61,7 +72,9 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
         <p>${settings.store_tagline}</p>
       </div>
       <ul class="footer-promises">${promises(settings).map((p) => html`<li>${p.icon}${p.text}</li>`)}</ul>
+      ${categories.length ? html`<div class="footer-links"><b>الأقسام</b>${categories.map((c) => html`<a href="/c/${encodeURIComponent(c.slug)}">${c.name}</a>`)}<a href="/offers">العروض</a></div>` : ''}
       <div class="footer-links">
+        <b>المساعدة</b>
         <a href="/track">تتبع طلبك</a>
         <a href="/policies">الشحن والاسترجاع والخصوصية</a>
         ${settings.support_phone ? html`<a href="tel:${settings.support_phone}" dir="ltr">${settings.support_phone}</a>` : ''}
@@ -75,44 +88,77 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
 </html>`);
 }
 
-function productCard(p, currency) {
+function productCard(p, currency, { csrf, back } = {}) {
   const onSale = p.compare_at_price > p.price;
+  const url = `/p/${encodeURIComponent(p.slug)}`;
+  const saving = onSale ? Math.round((1 - p.price / p.compare_at_price) * 100) : 0;
   return html`
-    <a class="product-card" href="/p/${encodeURIComponent(p.slug)}">
-      <div class="arch">
-        ${p.image_url ? html`<img src="${p.image_url}" alt="${p.name}" loading="lazy">` : html`<span class="noimg" aria-hidden="true">${p.name.slice(0, 1)}</span>`}
-        ${p.stock > 0 ? (onSale ? html`<span class="flag sale">تخفيض</span>` : '') : html`<span class="flag out">نفدت الكمية</span>`}
+    <article class="product-card">
+      <a class="card-link" href="${url}">
+        <div class="arch">
+          ${p.image_url ? html`<img src="${p.image_url}" alt="${p.name}" loading="lazy">` : html`<span class="noimg" aria-hidden="true">${p.name.slice(0, 1)}</span>`}
+          ${p.stock > 0
+            ? (onSale ? html`<span class="flag sale">وفّر ${saving}%</span>` : p.stock <= (p.low_stock_at ?? 0) ? html`<span class="flag few">باقي ${p.stock}</span>` : '')
+            : html`<span class="flag out">نفدت الكمية</span>`}
+        </div>
+        <h3>${p.name}</h3>
+      </a>
+      <div class="card-foot">
+        <div class="price">
+          <span>${formatMoney(p.price, currency)}</span>
+          ${onSale ? html`<s>${formatMoney(p.compare_at_price, currency)}</s>` : ''}
+        </div>
+        ${csrf && p.stock > 0 ? html`
+          <form method="post" action="/cart/add" class="quick-add">
+            <input type="hidden" name="_csrf" value="${csrf}">
+            <input type="hidden" name="product_id" value="${p.id}">
+            <input type="hidden" name="back" value="${back ?? '/'}">
+            <button type="submit" aria-label="أضف ${p.name} للسلة">${icon.plus}<span>أضف</span></button>
+          </form>` : ''}
       </div>
-      <h3>${p.name}</h3>
-      <div class="price">
-        <span>${formatMoney(p.price, currency)}</span>
-        ${onSale ? html`<s>${formatMoney(p.compare_at_price, currency)}</s>` : ''}
-      </div>
-    </a>`;
+    </article>`;
 }
 
-export function grid(items, currency) {
-  if (!items.length) return html`<p class="empty">ماكو منتجات هنا حالياً. <a href="/">ارجع للرئيسية</a></p>`;
-  return html`<div class="grid">${items.map((p) => productCard(p, currency))}</div>`;
+export function grid(items, currency, options = {}) {
+  if (!items.length) return html`<p class="empty">ماكو منتجات هنا حالياً. <a href="/products">شوف كل المنتجات</a></p>`;
+  return html`<div class="grid">${items.map((p) => productCard(p, currency, options))}</div>`;
+}
+
+/** A titled row of products with a "see all" link; renders nothing when empty. */
+function shelf(title, items, settings, { csrf, more, note } = {}) {
+  if (!items?.length) return '';
+  return html`
+    <section class="shelf">
+      <div class="shelf-head">
+        <h2 class="section-title">${title}</h2>
+        ${more ? html`<a class="more" href="${more}">شوف الكل</a>` : ''}
+      </div>
+      ${note ? html`<p class="shelf-note">${note}</p>` : ''}
+      ${grid(items, settings.currency, { csrf, back: '/' })}
+    </section>`;
 }
 
 function categoryNav(categories, current) {
   if (!categories?.length) return '';
   return html`
     <nav class="chips" aria-label="الأقسام">
-      <a class="chip ${current ? '' : 'active'}" href="/">الكل</a>
+      <a class="chip ${current ? '' : 'active'}" href="/products">الكل</a>
       ${categories.map((c) => html`<a class="chip ${current === c.slug ? 'active' : ''}" href="/c/${encodeURIComponent(c.slug)}">${c.name}</a>`)}
     </nav>`;
 }
 
-export function home({ settings, categories, items }) {
-  const featured = items.find((p) => p.image_url && p.stock > 0) ?? items[0];
+export function home({ settings, categories, newest, onSale, bestSellers, csrf }) {
+  const featured = onSale.find((p) => p.image_url) ?? newest.find((p) => p.image_url && p.stock > 0) ?? newest[0];
+  const policies = settings.policies;
   return html`
     <section class="gate">
       <div class="gate-text">
         <h1><span class="gate-name">${settings.store_name}</span><span class="gate-tagline">${settings.store_tagline}</span></h1>
         <ul class="gate-promises">${promises(settings).map((p) => html`<li>${p.icon}${p.text}</li>`)}</ul>
-        <a class="btn buy" href="#products">تصفح المنتجات</a>
+        <div class="gate-actions">
+          <a class="btn buy" href="/products">تصفح المنتجات</a>
+          ${onSale.length ? html`<a class="btn ghost" href="/offers">شوف العروض</a>` : ''}
+        </div>
       </div>
       ${featured ? html`
         <a class="gate-window" href="/p/${encodeURIComponent(featured.slug)}">
@@ -120,19 +166,72 @@ export function home({ settings, categories, items }) {
           <span class="gate-caption">${featured.name}<b>${formatMoney(featured.price, settings.currency)}</b></span>
         </a>` : ''}
     </section>
-    <section id="products" class="shelf">
-      <h2 class="section-title">المنتجات</h2>
-      ${categoryNav(categories)}
-      ${grid(items, settings.currency)}
+
+    ${categories.length ? html`
+      <section class="shelf">
+        <h2 class="section-title">تسوّق حسب القسم</h2>
+        <div class="cat-grid">
+          ${categories.map((c) => html`
+            <a class="cat-tile" href="/c/${encodeURIComponent(c.slug)}">
+              <span class="cat-img">${c.image_url ? html`<img src="${c.image_url}" alt="" loading="lazy">` : ''}</span>
+              <span class="cat-name">${c.name}</span>
+              <span class="cat-count">${c.product_count} منتج</span>
+            </a>`)}
+        </div>
+      </section>` : ''}
+
+    ${shelf('العروض', onSale, settings, { csrf, more: '/offers', note: 'سعرها هسة أقل من المعتاد، لحد ما تخلص الكمية.' })}
+    ${shelf('الأكثر طلباً', bestSellers, settings, { csrf, note: 'اللي طلبه الزباين أكثر شي آخر 3 أشهر.' })}
+    ${shelf('وصل جديد', newest, settings, { csrf, more: '/products' })}
+
+    <section class="steps-band" aria-labelledby="how-title">
+      <h2 class="section-title" id="how-title">شلون تطلب؟</h2>
+      <ol class="how">
+        <li><b>اختار</b><span>ضيف اللي يعجبك للسلة، أو اسأل المساعد يدلك.</span></li>
+        <li><b>اطلب</b><span>اكتب اسمك ورقمك وعنوانك بأقرب نقطة دالة.</span></li>
+        <li><b>نأكد</b><span>نتصل بيك نأكد الطلب قبل ما نشحنه.</span></li>
+        <li><b>استلم وادفع</b><span>افحص طلبك ويه المندوب وادفع نقداً.</span></li>
+      </ol>
+    </section>
+
+    <section class="help-band">
+      <div class="faq">
+        <h2 class="section-title">أسئلة شائعة</h2>
+        <details><summary>شكد يطول التوصيل؟</summary><p>${policies.shipping}</p></details>
+        <details><summary>إذا ما عجبني المنتج أكدر أرجعه؟</summary><p>${policies.returns}</p></details>
+        <details><summary>شلون أدفع؟</summary><p>${policies.payment}</p></details>
+        <details><summary>شلون أتابع طلبي؟</summary><p>من صفحة <a href="/track">تتبع طلبك</a> برقم الطلب ورقم هاتفك، أو اسأل المساعد.</p></details>
+      </div>
+      <div class="ask">
+        <h2 class="section-title">محتار شتختار؟</h2>
+        <p>المساعد يعرف كل منتجاتنا وأسعارها، ويرد عليك باللهجة العراقية خلال ثواني.</p>
+        <button class="btn primary" type="button" data-open-chat>${icon.chat} اسأل المساعد</button>
+        ${settings.support_phone ? html`<p class="muted">أو اتصل بينا: <a href="tel:${settings.support_phone}" dir="ltr">${settings.support_phone}</a></p>` : ''}
+      </div>
     </section>`;
 }
 
-export function listing({ settings, heading, items, query }) {
+export function listing({ settings, heading, intro, items, query, sort, categories, currentCategory, here, csrf }) {
+  const back = here ?? '/';
   return html`
-    <h1 class="page-title">${heading}</h1>
+    <div class="listing-head">
+      <div>
+        <h1 class="page-title">${heading}</h1>
+        ${intro ? html`<p class="shelf-note">${intro}</p>` : ''}
+      </div>
+      ${sort && items.length > 1 ? html`
+        <form class="sort" method="get">
+          <label>رتّب حسب
+            <select name="sort">${Object.entries(SORTS).map(([key, s]) => html`<option value="${key}" ${key === sort ? raw('selected') : ''}>${s.label}</option>`)}</select>
+          </label>
+          <button class="btn ghost small" type="submit">رتّب</button>
+        </form>` : ''}
+    </div>
+    ${query === undefined ? categoryNav(categories, currentCategory) : ''}
+    ${items.length ? html`<p class="count">${items.length} منتج</p>` : ''}
     ${query !== undefined && !items.length
-      ? html`<p class="empty">ما لكينا شي لـ "${query}". جرّب كلمة ثانية، أو اسأل المساعد تحت وهو يدوّرلك.</p>`
-      : grid(items, settings.currency)}`;
+      ? html`<p class="empty">ما لكينا شي لـ "${query}". جرّب كلمة ثانية، أو <button class="link" type="button" data-open-chat>اسأل المساعد</button> وهو يدوّرلك.</p>`
+      : grid(items, settings.currency, { csrf, back })}`;
 }
 
 export function product({ settings, product: p, related, csrf }) {
@@ -156,6 +255,7 @@ export function product({ settings, product: p, related, csrf }) {
         ${p.stock > 0
           ? html`<form method="post" action="/cart/add" class="buy-form">
               <input type="hidden" name="_csrf" value="${csrf}">
+              <input type="hidden" name="back" value="/p/${encodeURIComponent(p.slug)}">
               <input type="hidden" name="product_id" value="${p.id}">
               <label class="qty-field">الكمية <input type="number" name="quantity" value="1" min="1" max="${Math.min(p.stock, 20)}" inputmode="numeric"></label>
               <button class="btn buy" type="submit">أضف للسلة</button>
@@ -170,7 +270,7 @@ export function product({ settings, product: p, related, csrf }) {
         ${p.faq?.length ? html`<section class="faq"><h2>أسئلة شائعة</h2>${p.faq.map((f) => html`<details><summary>${f.q}</summary><p>${f.a}</p></details>`)}</section>` : ''}
       </div>
     </article>
-    ${related.length ? html`<section class="shelf"><h2 class="section-title">قد يعجبك أيضاً</h2>${grid(related, settings.currency)}</section>` : ''}`;
+    ${related.length ? html`<section class="shelf"><h2 class="section-title">قد يعجبك أيضاً</h2>${grid(related, settings.currency, { csrf, back: `/p/${encodeURIComponent(p.slug)}` })}</section>` : ''}`;
 }
 
 export function productJsonLd(p, settings) {
@@ -231,6 +331,12 @@ export function cart({ settings, view, csrf, error }) {
               <input type="hidden" name="product_id" value="${item.product_id}">
               <input type="number" name="quantity" value="${item.quantity}" min="0" max="20" inputmode="numeric" aria-label="كمية ${item.name}">
               <button class="btn ghost small" type="submit">حدّث</button>
+            </form>
+            <form method="post" action="/cart/update" class="remove">
+              <input type="hidden" name="_csrf" value="${csrf}">
+              <input type="hidden" name="product_id" value="${item.product_id}">
+              <input type="hidden" name="quantity" value="0">
+              <button class="link danger" type="submit" aria-label="احذف ${item.name} من السلة">احذف</button>
             </form>
           </li>`)}
       </ul>

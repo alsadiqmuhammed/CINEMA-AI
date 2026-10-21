@@ -29,27 +29,58 @@ store.use((req, res, next) => {
 });
 
 async function render(req, res, page, { status = 200, ...props } = {}) {
-  const settings = await getSettings();
-  const cart = await carts.findOpen(req.cookies[CART_COOKIE]);
+  const [settings, categories, cart] = await Promise.all([
+    getSettings(), products.activeCategories(), carts.findOpen(req.cookies[CART_COOKIE]),
+  ]);
   const count = cart ? (await carts.lines(cart.id)).reduce((n, i) => n + i.quantity, 0) : 0;
-  const body = page({ settings, csrf: res.locals.csrf, ...props });
-  res.status(status).type('html').send(views.layout({ settings, body, cartCount: count, ...props.meta }));
+  // Where "add to cart" returns to: this page with its query (sort etc.), minus the toast marker.
+  const here = new URL(req.originalUrl, 'http://local');
+  here.searchParams.delete('added');
+  const body = page({ settings, csrf: res.locals.csrf, categories, path: req.path, here: here.pathname + here.search, ...props });
+  res.status(status).type('html').send(views.layout({
+    settings, body, cartCount: count, categories, path: req.path, added: req.query.added !== undefined, ...props.meta,
+  }));
 }
+
+// Only same-site paths, so a crafted form can't bounce visitors elsewhere.
+function safeBack(value) {
+  const back = String(value ?? '');
+  return back.startsWith('/') && !back.startsWith('//') && !back.startsWith('/\\') ? back : null;
+}
+
+const sortOf = (req) => (products.SORTS[req.query.sort] ? req.query.sort : 'new');
 
 function setCart(res, cart) {
   res.cookie(CART_COOKIE, cart.token, { ...cookieOptions, maxAge: 30 * 86_400_000 });
 }
 
 store.get('/', async (req, res) => {
-  const [categories, items] = await Promise.all([products.categories(), products.listActive({ limit: 24 })]);
-  await render(req, res, views.home, { categories, items, meta: { canonical: '/' } });
+  const [newest, onSale, bestSellers] = await Promise.all([
+    products.listActive({ limit: 8 }), products.listActive({ onSale: true, limit: 8 }), products.bestSellers(8),
+  ]);
+  await render(req, res, views.home, { newest, onSale, bestSellers, meta: { canonical: '/' } });
+});
+
+store.get('/products', async (req, res) => {
+  const sort = sortOf(req);
+  const items = await products.listActive({ sort, limit: 120 });
+  await render(req, res, views.listing, { heading: 'كل المنتجات', items, sort, meta: { title: 'كل المنتجات', canonical: '/products' } });
+});
+
+store.get('/offers', async (req, res) => {
+  const sort = sortOf(req);
+  const items = await products.listActive({ onSale: true, sort, limit: 120 });
+  await render(req, res, views.listing, {
+    heading: 'العروض', intro: 'منتجات سعرها هسة أقل من سعرها المعتاد، لحد ما تخلص الكمية.', items, sort, meta: { title: 'العروض', canonical: '/offers' },
+  });
 });
 
 store.get('/c/:slug', async (req, res) => {
   const category = (await products.categories()).find((c) => c.slug === req.params.slug);
   if (!category) return render(req, res, views.notFound, { status: 404 });
-  const items = await products.listActive({ categorySlug: category.slug, limit: 60 });
-  await render(req, res, views.listing, { heading: category.name, items, meta: { title: category.name, canonical: `/c/${category.slug}` } });
+  const sort = sortOf(req);
+  const items = await products.listActive({ categorySlug: category.slug, sort, limit: 120 });
+  await render(req, res, views.listing, { heading: category.name, items, sort, currentCategory: category.slug, meta: { title: category.name, canonical: `/c/${category.slug}` } });
 });
 
 store.get('/search', async (req, res) => {
@@ -92,7 +123,12 @@ store.post('/cart/add', async (req, res) => {
   setCart(res, cart);
   try {
     await carts.setItem(cart.id, Number(req.body.product_id), Math.max(1, Number(req.body.quantity) || 1), { add: true });
-    res.redirect('/cart');
+    // Stay where the shopper was and confirm with a toast; without a page to return to, open the cart.
+    const back = safeBack(req.body.back);
+    if (!back) return res.redirect('/cart');
+    const url = new URL(back, 'http://local');
+    url.searchParams.set('added', '1');
+    res.redirect(url.pathname + url.search + url.hash);
   } catch (error) {
     res.redirect(`/cart?error=${encodeURIComponent(error.message)}`);
   }
@@ -161,7 +197,7 @@ store.get('/robots.txt', (req, res) => {
 });
 
 store.get('/sitemap.xml', async (req, res) => {
-  const [items, categories] = await Promise.all([products.listActive({ limit: 5000 }), products.categories()]);
-  const urls = ['/', '/policies', ...categories.map((c) => `/c/${encodeURIComponent(c.slug)}`), ...items.map((p) => `/p/${encodeURIComponent(p.slug)}`)];
+  const [items, categories] = await Promise.all([products.listActive({ limit: 5000 }), products.activeCategories()]);
+  const urls = ['/', '/products', '/offers', '/policies', ...categories.map((c) => `/c/${encodeURIComponent(c.slug)}`), ...items.map((p) => `/p/${encodeURIComponent(p.slug)}`)];
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((u) => `<url><loc>${config.baseUrl}${u}</loc></url>`).join('')}</urlset>`);
 });

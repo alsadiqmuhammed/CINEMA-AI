@@ -22,14 +22,21 @@ export function searchTerms(q) {
     .slice(0, 8);
 }
 
-export async function listActive({ categorySlug, q, limit = 24, offset = 0 } = {}) {
+export const SORTS = {
+  new: { label: 'الأحدث', order: 'p.created_at DESC' },
+  price_asc: { label: 'السعر: من الأقل', order: 'p.price ASC, p.created_at DESC' },
+  price_desc: { label: 'السعر: من الأعلى', order: 'p.price DESC, p.created_at DESC' },
+};
+
+export async function listActive({ categorySlug, q, onSale = false, sort = 'new', limit = 24, offset = 0 } = {}) {
   const where = [`p.status = 'active'`];
   const params = [];
   if (categorySlug) {
     params.push(categorySlug);
     where.push(`c.slug = $${params.length}`);
   }
-  let order = 'p.created_at DESC';
+  if (onSale) where.push('p.compare_at_price > p.price AND p.stock > 0');
+  let order = (SORTS[sort] ?? SORTS.new).order;
   if (q !== undefined) {
     const terms = searchTerms(q);
     if (!terms.length) return [];
@@ -101,6 +108,28 @@ export async function recommendations(productId, limit = 4) {
 
 export async function categories() {
   return db.many('SELECT * FROM categories ORDER BY sort, name');
+}
+
+/** Categories shown to shoppers: only those with active products, with a count and a cover image. */
+export async function activeCategories() {
+  return db.many(`SELECT c.*, COUNT(p.id)::int AS product_count,
+                         (SELECT i.url FROM products p2 JOIN product_images i ON i.product_id = p2.id
+                           WHERE p2.category_id = c.id AND p2.status = 'active'
+                           ORDER BY p2.created_at DESC, i.sort, i.id LIMIT 1) AS image_url
+                    FROM categories c JOIN products p ON p.category_id = c.id AND p.status = 'active'
+                   GROUP BY c.id ORDER BY c.sort, c.name`);
+}
+
+/** Most ordered in the last 90 days (cancelled orders excluded); empty until there are orders. */
+export async function bestSellers(limit = 8) {
+  return db.many(
+    `${WITH_IMAGE} JOIN (
+        SELECT oi.product_id, SUM(oi.quantity) AS sold FROM order_items oi JOIN orders o ON o.id = oi.order_id
+         WHERE o.status <> 'cancelled' AND o.created_at > now() - interval '90 days' GROUP BY oi.product_id
+      ) s ON s.product_id = p.id
+      WHERE p.status = 'active' AND p.stock > 0 ORDER BY s.sold DESC, p.created_at DESC LIMIT $1`,
+    [limit],
+  );
 }
 
 export async function createCategory(name) {

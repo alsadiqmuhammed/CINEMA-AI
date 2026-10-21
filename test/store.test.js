@@ -88,6 +88,21 @@ describe('storefront and checkout', () => {
     assert.equal(alert.severity, 'critical');
   });
 
+  test('listing pages sort, and quick add returns to the same page but never off-site', async () => {
+    const visitor = new Client(server.base);
+    const page = await visitor.get('/products?sort=price_asc');
+    assert.equal(page.status, 200);
+    const prices = [...page.body.matchAll(/<div class="price">\s*<span>([\d,٬]+)/g)].map((m) => Number(m[1].replace(/\D/g, '')));
+    assert.deepEqual(prices, [...prices].sort((a, b) => a - b));
+    assert.equal((await visitor.get('/offers')).status, 200);
+    const csrf = visitor.csrfFrom(page.body);
+    const product = await productBySku('DEMO-3');
+    const back = await visitor.post('/cart/add', { _csrf: csrf, product_id: String(product.id), quantity: '1', back: '/products?sort=price_asc' });
+    assert.equal(back.location, '/products?sort=price_asc&added=1');
+    const offsite = await visitor.post('/cart/add', { _csrf: csrf, product_id: String(product.id), quantity: '1', back: '//evil.example/x' });
+    assert.equal(offsite.location, '/cart');
+  });
+
   test('invalid phone shows a form error and keeps the cart', async () => {
     const product = await productBySku('DEMO-3');
     const { visitor, csrf } = await visitorWithCart(server.base, product.id, 1);
