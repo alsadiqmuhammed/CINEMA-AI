@@ -18,5 +18,9 @@ export default async function handler(req, res) {
     res.statusCode = 503;
     return res.end('Service unavailable');
   }
+  // Vercel's Node helpers attach their own req.body/query/cookies and res.redirect/status/send/json, which
+  // shadow Express's (res.redirect defaults to 307, so a form POST is replayed at the redirect target).
+  for (const key of ['body', 'query', 'cookies']) delete req[key];
+  for (const key of ['redirect', 'status', 'send', 'json']) delete res[key];
   return app(req, res);
 }
