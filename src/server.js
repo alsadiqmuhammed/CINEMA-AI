@@ -25,6 +25,7 @@ export function createApp() {
       'Content-Security-Policy': "default-src 'self'; img-src 'self' https: data:; style-src 'self'; script-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
     });
     if (config.isProduction) res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    if (config.demoStore) res.set('X-Robots-Tag', 'noindex, nofollow');
     next();
   });
 

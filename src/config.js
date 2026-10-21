@@ -13,6 +13,8 @@ export const config = {
   // Render sets RENDER_EXTERNAL_URL to the service's public address; Vercel sets the production host without a scheme.
   baseUrl: (env.APP_BASE_URL || env.RENDER_EXTERNAL_URL
     || (env.VERCEL_PROJECT_PRODUCTION_URL && `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`) || 'http://localhost:3000').replace(/\/$/, ''),
+  // Proposal demo: shows a "not the official store" banner and keeps the site out of search engines.
+  demoStore: env.DEMO_STORE ?? '',
   // Appended to CSS/JS URLs: static files are cached for 7 days, so each deploy needs new URLs.
   assetVersion: (env.VERCEL_GIT_COMMIT_SHA || env.RENDER_GIT_COMMIT || Date.now().toString(36)).slice(0, 8),
   databaseUrl: env.DATABASE_URL ?? 'postgres://store:store@localhost:5432/store',

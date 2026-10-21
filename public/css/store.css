@@ -30,6 +30,9 @@ main.wrap { min-height: 60vh; padding-top: 24px; padding-bottom: 64px; }
 .skip:focus { top: 8px; }
 .muted { color: var(--muted); }
 
+/* proposal demo notice */
+.demo-banner { margin: 0; padding: 8px 16px; background: var(--ink); color: var(--yolk); text-align: center; font-weight: 700; font-size: .92rem; }
+
 /* header */
 .site-header { background: var(--bg); border-bottom: var(--outline); position: sticky; top: 0; z-index: 20; }
 .header-row { display: flex; align-items: center; gap: 20px; padding-top: 10px; padding-bottom: 10px; }

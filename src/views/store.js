@@ -32,6 +32,7 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7651a">
+  ${config.demoStore ? raw('<meta name="robots" content="noindex, nofollow">') : ''}
   <title>${pageTitle}</title>
   <meta name="description" content="${description ?? settings.store_tagline}">
   ${canonical ? html`<link rel="canonical" href="${config.baseUrl}${canonical}">` : ''}
@@ -44,6 +45,7 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
 </head>
 <body>
   <a class="skip" href="#main">انتقل للمحتوى</a>
+  ${config.demoStore ? html`<p class="demo-banner" role="note">نسخة تجريبية مقترحة، مو المتجر الرسمي. الطلبات هنا غير حقيقية وما توصل.</p>` : ''}
   <header class="site-header">
     <div class="wrap header-row">
       <a class="brand" href="/"><img src="/static/img/dijaja-logo.jpg" alt="" width="44" height="44"><span>${settings.store_name}</span></a>

@@ -157,6 +157,7 @@ store.get('/policies', async (req, res) => {
 });
 
 store.get('/robots.txt', (req, res) => {
+  if (config.demoStore) return res.type('text/plain').send('User-agent: *\nDisallow: /\n');
   res.type('text/plain').send(`User-agent: *\nDisallow: /admin\nDisallow: /cart\nDisallow: /checkout\nSitemap: ${config.baseUrl}/sitemap.xml\n`);
 });
 

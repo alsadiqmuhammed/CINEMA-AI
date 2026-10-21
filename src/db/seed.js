@@ -2,6 +2,7 @@ import { config } from '../config.js';
 import { hashPassword } from '../lib/auth.js';
 import { migrate } from './migrate.js';
 import { db, pool } from './pool.js';
+import { seedDijaja } from './demo-dijaja.js';
 
 const DEMO_PRODUCTS = [
   { name: 'عطر مسك الليل', category: 'العطور', price: 45000, compare: 55000, stock: 25, image: 'perfume', tags: ['مسك', 'عطر', 'رجالي', 'نسائي'],
@@ -42,6 +43,7 @@ export async function seed({ demo = !config.isProduction, catalog = demo || proc
     await db.query(`INSERT INTO users (name, email, password_hash, role) VALUES ('موظف تجريبي', 'staff@store.local', $1, 'staff')`,
       [await hashPassword('Demo-Staff-2026')]);
   }
+  if (process.env.DEMO_STORE === 'dijaja') return seedDijaja();
   if (!catalog) return;
   if ((await db.one('SELECT COUNT(*)::int AS n FROM products')).n > 0) return;
 
