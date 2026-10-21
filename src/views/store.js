@@ -8,15 +8,19 @@ const icon = {
   bag: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>'),
   truck: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h11v10H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>'),
   cash: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>'),
+  egg: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c4 0 7 6.2 7 11a7 7 0 0 1-14 0c0-4.8 3-11 7-11Z"/><path d="m12 9 1.2 2.4 2.6.4-1.9 1.8.5 2.6-2.4-1.3-2.4 1.3.5-2.6-1.9-1.8 2.6-.4Z" fill="currentColor" stroke="none"/></svg>'),
+  shield: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6Z"/><path d="m8.8 12 2.2 2.2 4.2-4.4"/></svg>'),
   gift: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7c-1.5-3-5-3-5-1s3 1 5 1c2 0 5 1 5-1s-3.5-2-5 1"/></svg>'),
 };
 
 /** Promises shown in the hero and footer, built from the store's own settings. */
 function promises(settings) {
-  const list = [{ icon: icon.cash, text: 'الدفع نقداً عند الاستلام' }, { icon: icon.truck, text: 'توصيل لكل المحافظات' }];
-  if (Number(settings.free_shipping_over) > 0) {
-    list.push({ icon: icon.gift, text: `التوصيل مجاني فوق ${formatMoney(settings.free_shipping_over, settings.currency)}` });
+  const list = [{ icon: icon.shield, text: 'ضمان دجاجة على كل قطعة' }];
+  if (!(Number(settings.shipping_fee) > 0)) list.push({ icon: icon.truck, text: 'توصيل مجاني لكل العراق' });
+  else if (Number(settings.free_shipping_over) > 0) {
+    list.push({ icon: icon.truck, text: `التوصيل مجاني فوق ${formatMoney(settings.free_shipping_over, settings.currency)}` });
   }
+  list.push({ icon: icon.cash, text: 'الدفع عند الاستلام' });
   return list;
 }
 
@@ -27,14 +31,14 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1d3b8b">
+  <meta name="theme-color" content="#f7651a">
   <title>${pageTitle}</title>
   <meta name="description" content="${description ?? settings.store_tagline}">
   ${canonical ? html`<link rel="canonical" href="${config.baseUrl}${canonical}">` : ''}
   <meta property="og:title" content="${pageTitle}">
   <meta property="og:description" content="${description ?? settings.store_tagline}">
-  <link rel="preload" href="/static/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/static/fonts/reem-kufi-arabic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/rubik-arabic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/rubik-arabic-900-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/css/store.css?v=${config.assetVersion}">
   ${jsonLd ? raw(`<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>`) : ''}
 </head>
@@ -42,7 +46,7 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
   <a class="skip" href="#main">انتقل للمحتوى</a>
   <header class="site-header">
     <div class="wrap header-row">
-      <a class="brand" href="/">${settings.store_name}</a>
+      <a class="brand" href="/"><img src="/static/img/dijaja-logo.jpg" alt="" width="44" height="44"><span>${settings.store_name}</span></a>
       <form class="search" action="/search" method="get" role="search">
         ${icon.search}
         <input type="search" name="q" placeholder="شنو تدوّر عليه؟" aria-label="بحث في المنتجات">
@@ -57,8 +61,8 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
   <footer class="site-footer">
     <div class="wrap footer-grid">
       <div>
-        <a class="brand" href="/">${settings.store_name}</a>
-        <p>${settings.store_tagline}</p>
+        <a class="brand" href="/"><img src="/static/img/dijaja-logo.jpg" alt="" width="52" height="52"><span>${settings.store_name}</span></a>
+        <p class="slogan">دجاجة، الحل الذكي</p>
       </div>
       <ul class="footer-promises">${promises(settings).map((p) => html`<li>${p.icon}${p.text}</li>`)}</ul>
       <div class="footer-links">
@@ -75,18 +79,32 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
 </html>`);
 }
 
+function condition(p) {
+  const tag = (prefix) => (p.tags ?? []).find((t) => t.startsWith(prefix))?.slice(prefix.length).trim();
+  return { state: tag('حالة:'), grade: tag('تقييم:') };
+}
+
+function conditionChips(p) {
+  const { state, grade } = condition(p);
+  if (!state && !grade) return '';
+  return html`<div class="chips-row">${state ? html`<span class="state">${state}</span>` : ''}${grade ? html`<span class="grade ${/gold/i.test(grade) ? 'gold' : 'silver'}">${icon.egg}<span dir="ltr">${grade}</span></span>` : ''}</div>`;
+}
+
 function productCard(p, currency) {
   const onSale = p.compare_at_price > p.price;
   return html`
     <a class="product-card" href="/p/${encodeURIComponent(p.slug)}">
-      <div class="arch">
+      <div class="tile">
         ${p.image_url ? html`<img src="${p.image_url}" alt="${p.name}" loading="lazy">` : html`<span class="noimg" aria-hidden="true">${p.name.slice(0, 1)}</span>`}
-        ${p.stock > 0 ? (onSale ? html`<span class="flag sale">تخفيض</span>` : '') : html`<span class="flag out">نفدت الكمية</span>`}
+        ${p.stock > 0 ? (p.stock <= (p.low_stock_at ?? 0) ? html`<span class="flag few">قطع محدودة</span>` : '') : html`<span class="flag out">نفدت</span>`}
       </div>
-      <h3>${p.name}</h3>
-      <div class="price">
-        <span>${formatMoney(p.price, currency)}</span>
-        ${onSale ? html`<s>${formatMoney(p.compare_at_price, currency)}</s>` : ''}
+      <div class="card-body">
+        <h3>${p.name}</h3>
+        ${conditionChips(p)}
+        <div class="price">
+          <span>${formatMoney(p.price, currency)}</span>
+          ${onSale ? html`<s aria-label="السعر بالسوگ">${formatMoney(p.compare_at_price, currency)}</s>` : ''}
+        </div>
       </div>
     </a>`;
 }
@@ -108,17 +126,22 @@ function categoryNav(categories, current) {
 export function home({ settings, categories, items }) {
   const featured = items.find((p) => p.image_url && p.stock > 0) ?? items[0];
   return html`
-    <section class="gate">
-      <div class="gate-text">
-        <h1><span class="gate-name">${settings.store_name}</span><span class="gate-tagline">${settings.store_tagline}</span></h1>
-        <ul class="gate-promises">${promises(settings).map((p) => html`<li>${p.icon}${p.text}</li>`)}</ul>
-        <a class="btn buy" href="#products">تصفح المنتجات</a>
+    <section class="coop">
+      <div class="coop-text">
+        <h1><span class="coop-line">سماعات وساعات</span><span class="coop-big">أصلية</span><span class="coop-line">بسعر ما تلگاه بالسوگ</span></h1>
+        <p>${settings.store_tagline}</p>
+        <ul class="coop-promises">${promises(settings).map((p) => html`<li>${p.icon}${p.text}</li>`)}</ul>
+        <a class="btn buy" href="#products">شوف المنتجات</a>
       </div>
-      ${featured ? html`
-        <a class="gate-window" href="/p/${encodeURIComponent(featured.slug)}">
-          <span class="arch">${featured.image_url ? html`<img src="${featured.image_url}" alt="${featured.name}">` : html`<span class="noimg">${featured.name.slice(0, 1)}</span>`}</span>
-          <span class="gate-caption">${featured.name}<b>${formatMoney(featured.price, settings.currency)}</b></span>
-        </a>` : ''}
+      <div class="coop-mascot" aria-hidden="true">
+        <span class="egg"><img src="/static/img/dijaja-logo.jpg" alt=""></span>
+        ${featured ? html`<a class="sticker" href="/p/${encodeURIComponent(featured.slug)}">${featured.name}<b>${formatMoney(featured.price, settings.currency)}</b></a>` : ''}
+      </div>
+    </section>
+    <section class="eggstar-explainer" aria-label="شنو يعني أوبن بوكس وEggstar">
+      <div><b>أوبن بوكس</b><span>قطعة أصلية انفتح كارتونها بس، نفحصها ونضمنها.</span></div>
+      <div><b dir="ltr">Gold Eggstar</b><span>حالتها مثل الجديد تماماً.</span></div>
+      <div><b dir="ltr">Silver Eggstar</b><span>بيها أثر استخدام خفيف ما يأثر على الشغل.</span></div>
     </section>
     <section id="products" class="shelf">
       <h2 class="section-title">المنتجات</h2>
@@ -142,16 +165,17 @@ export function product({ settings, product: p, related, csrf }) {
     <nav class="crumbs" aria-label="المسار"><a href="/">الرئيسية</a>${p.category_slug ? html`<span aria-hidden="true">/</span><a href="/c/${encodeURIComponent(p.category_slug)}">${p.category_name}</a>` : ''}</nav>
     <article class="product">
       <div class="gallery">
-        <div class="arch large">
+        <div class="tile large">
           ${images.length ? html`<img src="${images[0].url}" alt="${images[0].alt || p.name}">` : html`<span class="noimg">${p.name.slice(0, 1)}</span>`}
         </div>
         ${images.length > 1 ? html`<div class="thumbs">${images.slice(1).map((img) => html`<img src="${img.url}" alt="${img.alt || p.name}" loading="lazy">`)}</div>` : ''}
       </div>
       <div class="info">
         <h1>${p.name}</h1>
-        <div class="price big">
-          <span>${formatMoney(p.price, settings.currency)}</span>
-          ${onSale ? html`<s>${formatMoney(p.compare_at_price, settings.currency)}</s>` : ''}
+        ${conditionChips(p)}
+        <div class="price-box">
+          ${onSale ? html`<div class="market"><span>السعر بالسوگ</span><s>${formatMoney(p.compare_at_price, settings.currency)}</s></div>` : ''}
+          <div class="ours"><span>السعر بدجاجة</span><b>${formatMoney(p.price, settings.currency)}</b></div>
         </div>
         ${p.stock > 0
           ? html`<form method="post" action="/cart/add" class="buy-form">
@@ -160,9 +184,10 @@ export function product({ settings, product: p, related, csrf }) {
               <label class="qty-field">الكمية <input type="number" name="quantity" value="1" min="1" max="${Math.min(p.stock, 20)}" inputmode="numeric"></label>
               <button class="btn buy" type="submit">أضف للسلة</button>
             </form>
-            ${p.stock <= p.low_stock_at ? html`<p class="stock-note">باقي ${p.stock} بس</p>` : ''}`
+            ${p.stock <= p.low_stock_at ? html`<p class="stock-note">${icon.egg} باقي ${p.stock} بس، اطلبها لا تطير</p>` : ''}`
           : html`<p class="stock-note out">نفدت الكمية حالياً. اسأل المساعد ونبلغك من يرجع.</p>`}
         <ul class="assurances">
+          <li>${icon.shield}<span><b>ضمان دجاجة.</b> كل قطعة أصلية ومفحوصة قبل ما توصلك.</span></li>
           <li>${icon.cash}<span><b>الدفع عند الاستلام.</b> افحص طلبك قبل ما تدفع.</span></li>
           <li>${icon.truck}<span><b>التوصيل.</b> ${settings.policies.shipping}</span></li>
         </ul>
@@ -286,7 +311,7 @@ export function checkout({ settings, view, csrf, error, values = {} }) {
 export function orderPlaced({ settings, order }) {
   return html`
     <section class="placed">
-      <div class="arch seal" aria-hidden="true"><span>✓</span></div>
+      <div class="egg seal" aria-hidden="true"><span>✓</span></div>
       <h1>وصلنا طلبك</h1>
       <p class="order-number">رقم الطلب <strong dir="ltr">${order.number}</strong></p>
       <p>الإجمالي ${formatMoney(order.total, order.currency)}، ${PAYMENT_METHODS[order.payment_method]}.</p>
@@ -342,7 +367,7 @@ export function policies({ settings }) {
 export function notFound() {
   return html`
     <section class="placed">
-      <div class="arch seal" aria-hidden="true"><span>؟</span></div>
+      <div class="egg seal" aria-hidden="true"><span>؟</span></div>
       <h1>الصفحة غير موجودة</h1>
       <p class="muted">يمكن الرابط تغيّر أو المنتج انشال.</p>
       <a class="btn primary" href="/">ارجع للرئيسية</a>
