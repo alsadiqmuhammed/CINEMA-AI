@@ -2,6 +2,7 @@ import { createHmac } from 'node:crypto';
 import { Router } from 'express';
 import { config } from '../config.js';
 import { token } from '../lib/auth.js';
+import { RateLimiter } from '../lib/rate-limit.js';
 import * as carts from '../services/carts.js';
 import * as orders from '../services/orders.js';
 import * as products from '../services/products.js';
@@ -47,6 +48,11 @@ function safeBack(value) {
   const back = String(value ?? '');
   return back.startsWith('/') && !back.startsWith('//') && !back.startsWith('/\\') ? back : null;
 }
+
+const checkoutLimiter = new RateLimiter({ name: 'checkout-ip', limit: 6, windowMs: 3_600_000 });
+const trackLimiter = new RateLimiter({ name: 'track-ip', limit: 20, windowMs: 15 * 60_000 });
+const contactLimiter = new RateLimiter({ name: 'contact-ip', limit: 10, windowMs: 3_600_000 });
+const TOO_MANY = 'محاولات كثيرة من نفس الجهاز. انتظر شوية وحاول مرة ثانية، أو احجي ويانا بالمحادثة.';
 
 const sortOf = (req) => (products.SORTS[req.query.sort] ? req.query.sort : 'new');
 
@@ -160,6 +166,11 @@ store.get('/checkout', async (req, res) => {
 
 store.post('/checkout', async (req, res) => {
   const cartToken = req.cookies[CART_COOKIE];
+  if (!(await checkoutLimiter.take(req.ip))) {
+    const view = await carts.view(await carts.findOpen(cartToken));
+    if (!view.items.length) return res.redirect('/cart');
+    return render(req, res, views.checkout, { view, error: TOO_MANY, values: req.body, status: 429, meta: { title: 'إتمام الطلب' } });
+  }
   try {
     const order = await orders.placeOrder(cartToken, req.body);
     res.clearCookie(CART_COOKIE, { path: '/' });
@@ -174,6 +185,7 @@ store.post('/checkout', async (req, res) => {
 
 // Save the contact as soon as it is typed so an abandoned cart can be followed up.
 store.post('/cart/contact', async (req, res) => {
+  if (!(await contactLimiter.take(req.ip))) return res.status(429).end();
   const cart = await carts.findOpen(req.cookies[CART_COOKIE]);
   if (cart) await carts.setContact(cart.id, { phone: req.body.phone, email: req.body.email });
   res.status(204).end();
@@ -193,6 +205,9 @@ store.get('/order/:number', async (req, res) => {
 // The form posts, so the phone number stays out of URLs and history; GET still works for old links.
 async function trackPage(req, res, source) {
   const values = { number: source.number, phone: source.phone };
+  if (values.number && values.phone && !(await trackLimiter.take(req.ip))) {
+    return render(req, res, views.track, { values: {}, error: TOO_MANY, status: 429, meta: { title: 'تتبع طلبك' } });
+  }
   const order = values.number && values.phone ? await orders.track(values.number, values.phone) : null;
   await render(req, res, views.track, {
     order, values, notFound: Boolean(values.number && values.phone && !order), meta: { title: 'تتبع طلبك' },

@@ -36,6 +36,10 @@ function orderNumber() {
  * Turns an open cart into an order. Stock is checked and decremented under row
  * locks so two customers cannot buy the last unit.
  */
+// Cash on delivery costs nothing to order, so a script could tie up stock with fake orders.
+// One number can have only this many orders waiting for the store's confirmation call.
+export const MAX_UNCONFIRMED_PER_PHONE = 2;
+
 export async function placeOrder(cartToken, form, { actor = { type: 'customer' } } = {}) {
   const phone = normalizePhone(form.phone);
   if (!phone) throw new OrderError('رقم الهاتف غير صحيح');
@@ -55,18 +59,31 @@ export async function placeOrder(cartToken, form, { actor = { type: 'customer' }
       [cart.id],
     );
     if (!items.length) throw new OrderError('السلة فارغة');
+    const waiting = await tx.one(`SELECT COUNT(*)::int AS n FROM orders WHERE ship_phone = $1 AND status = 'new'`, [phone]);
+    if (waiting.n >= MAX_UNCONFIRMED_PER_PHONE) {
+      throw new OrderError('عندك طلبات بعدها تنتظر التأكيد على هذا الرقم. فريقنا راح يتصل بيك، وإذا تريد تضيف شي احجي ويانا بالمحادثة.');
+    }
     for (const item of items) {
       if (item.status !== 'active') throw new OrderError(`المنتج "${item.name}" لم يعد متاحاً`);
       if (item.stock < item.quantity) throw new OrderError(`الكمية المتوفرة من "${item.name}" هي ${item.stock} فقط`);
     }
     const { subtotal, shipping, total } = carts.totals(items, settings);
 
+    const known = await tx.one('SELECT id FROM customers WHERE phone = $1', [phone]);
     const customer = await customers.findOrCreate(
       { phone, email: form.email, name: form.name, source: cart.source },
       tx,
     );
-    if (form.marketing_opt_in) {
-      await tx.query('UPDATE customers SET marketing_opt_in = TRUE WHERE id = $1', [customer.id]);
+    // Anyone can type any number, so a public form only records consent for a number we have never seen.
+    // For an existing customer the request goes on their record for staff to confirm on the phone.
+    if (form.marketing_opt_in && !customer.marketing_opt_in) {
+      if (!known) {
+        await tx.query('UPDATE customers SET marketing_opt_in = TRUE WHERE id = $1', [customer.id]);
+        await customers.addEvent(customer.id, 'marketing.opt_in', 'وافق على استلام العروض من نموذج الطلب', { source: 'checkout' }, tx);
+      } else {
+        await customers.addEvent(customer.id, 'marketing.opt_in_requested',
+          'طلب استلام العروض من نموذج الطلب، يحتاج تأكيد بالاتصال قبل تفعيله', { source: 'checkout' }, tx);
+      }
     }
     let created = null;
     for (let attempt = 0; !created && attempt < 5; attempt += 1) {

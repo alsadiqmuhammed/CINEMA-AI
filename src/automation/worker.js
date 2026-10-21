@@ -28,10 +28,16 @@ export async function abandonedCarts() {
       WHERE c.status = 'open' AND c.reminded_at IS NULL AND c.contact_phone IS NOT NULL
         AND c.updated_at < now() - make_interval(hours => $1)
         AND c.updated_at > now() - interval '7 days'
-        AND EXISTS (SELECT 1 FROM cart_items ci WHERE ci.cart_id = c.id)`,
+        AND EXISTS (SELECT 1 FROM cart_items ci WHERE ci.cart_id = c.id)
+        -- one reminder per number a week, however many carts carry it (anyone can type anyone's number)
+        AND NOT EXISTS (SELECT 1 FROM carts c2 WHERE c2.contact_phone = c.contact_phone
+                          AND c2.reminded_at > now() - interval '7 days')`,
     [auto.abandonedCartHours],
   );
+  const remindedNow = new Set();
   for (const cart of due) {
+    if (remindedNow.has(cart.contact_phone)) continue;
+    remindedNow.add(cart.contact_phone);
     const template = await whatsappTemplateFor(cart.contact_phone, config.whatsapp.abandonedCartTemplate);
     const greeting = cart.customer_name ? `هلا ${cart.customer_name}` : 'هلا بيك';
     await outbox.enqueue({

@@ -22,10 +22,14 @@ export const config = {
   // Local numbers starting with 0 are stored in international form (needed by WhatsApp): 07XX… → 9647XX…
   defaultCountryCode: (env.DEFAULT_COUNTRY_CODE ?? '964').replace(/\D/g, ''),
 
+  // Shared request limits (src/lib/rate-limit.js); the test suite switches them off and tests them on purpose.
+  rateLimits: env.RATE_LIMITS !== 'off',
+
   ai: {
     apiKey: env.ANTHROPIC_API_KEY ?? '',
     model: env.AI_MODEL ?? 'claude-opus-5-5',
     chatRequestsPerHour: int('AI_CHAT_REQUESTS_PER_HOUR', 60),
+    chatRequestsPerHourTotal: int('AI_CHAT_REQUESTS_PER_HOUR_TOTAL', 600),
   },
 
   whatsapp: {

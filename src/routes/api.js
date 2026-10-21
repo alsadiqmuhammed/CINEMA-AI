@@ -9,7 +9,9 @@ export const api = Router();
 
 const VISITOR_COOKIE = 'store_visitor';
 const MAX_MESSAGE = 1000;
-const limiter = new RateLimiter({ limit: config.ai.chatRequestsPerHour, windowMs: 3_600_000 });
+const limiter = new RateLimiter({ name: 'chat-ip', limit: config.ai.chatRequestsPerHour, windowMs: 3_600_000 });
+// A ceiling for the whole store, so no amount of addresses can run up the AI bill.
+const globalLimiter = new RateLimiter({ name: 'chat-all', limit: config.ai.chatRequestsPerHourTotal, windowMs: 3_600_000 });
 
 function visitorId(req, res) {
   let id = req.cookies[VISITOR_COOKIE];
@@ -38,7 +40,7 @@ api.post('/chat', async (req, res) => {
   if (!text) return res.status(400).json({ error: 'الرسالة فارغة' });
   const visitor = visitorId(req, res);
   // Keyed on the address only: the visitor cookie is the client's to reset, so it can't be part of the key.
-  if (!limiter.take(req.ip)) {
+  if (!(await limiter.take(req.ip)) || !(await globalLimiter.take('store'))) {
     return res.status(429).json({ error: 'رسائل كثيرة، حاول بعد قليل.' });
   }
 

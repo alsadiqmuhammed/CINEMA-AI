@@ -24,7 +24,11 @@ import * as views from '../views/admin.js';
 
 export const admin = Router();
 
-const loginLimiter = new RateLimiter({ limit: 10, windowMs: 15 * 60_000 });
+// Per account (guessing one password) and per address (trying many accounts).
+const loginAccountLimiter = new RateLimiter({ name: 'login-account', limit: 10, windowMs: 15 * 60_000 });
+const loginAddressLimiter = new RateLimiter({ name: 'login-ip', limit: 30, windowMs: 15 * 60_000 });
+// Checked against when the account doesn't exist, so a wrong email takes as long as a wrong password.
+let dummyHash = null;
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -59,12 +63,15 @@ admin.get('/login', async (req, res) => {
 });
 
 admin.post('/login', async (req, res) => {
-  const key = `${req.ip}:${String(req.body.email ?? '').toLowerCase()}`;
-  if (!loginLimiter.take(key)) {
+  const email = String(req.body.email ?? '').trim().toLowerCase();
+  const [accountOk, addressOk] = await Promise.all([loginAccountLimiter.take(email), loginAddressLimiter.take(req.ip)]);
+  if (!accountOk || !addressOk) {
     return page(req, res, 'تسجيل الدخول', views.login({ error: 'محاولات كثيرة. حاول بعد 15 دقيقة.' }), 429);
   }
-  const user = await db.one('SELECT * FROM users WHERE email = $1 AND active', [String(req.body.email ?? '').trim().toLowerCase()]);
-  if (!user || !(await verifyPassword(String(req.body.password ?? ''), user.password_hash))) {
+  const user = await db.one('SELECT * FROM users WHERE email = $1 AND active', [email]);
+  dummyHash ??= await hashPassword('not-a-real-account');
+  const passwordOk = await verifyPassword(String(req.body.password ?? ''), user?.password_hash ?? dummyHash);
+  if (!user || !passwordOk) {
     return page(req, res, 'تسجيل الدخول', views.login({ error: 'البريد أو كلمة المرور غير صحيحة', next: req.body.next }), 401);
   }
   const session = await createSession(user.id);

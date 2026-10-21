@@ -2,6 +2,7 @@
 process.env.DATABASE_URL ??= 'postgres://store:store@localhost:5432/store_test';
 process.env.NODE_ENV = 'test';
 process.env.AUTOMATION_ENABLED = 'false';
+process.env.RATE_LIMITS = 'off';
 // Never call the real API from tests; ai.test.js points the SDK at a local mock instead.
 if (process.env.TEST_AI_MOCK !== '1') process.env.ANTHROPIC_API_KEY = '';
 process.env.DEFAULT_COUNTRY_CODE = '964';

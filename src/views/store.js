@@ -472,7 +472,7 @@ function stepClass(current, step) {
   return a < b ? 'done' : a === b ? 'done current' : '';
 }
 
-export function track({ order, values = {}, notFound, csrf }) {
+export function track({ order, values = {}, notFound, error, csrf }) {
   return html`
     <h1 class="page-title">تتبع طلبك</h1>
     <form method="post" action="/track" class="form panel inline-form">
@@ -481,6 +481,7 @@ export function track({ order, values = {}, notFound, csrf }) {
       <label>رقم الهاتف <input name="phone" required dir="ltr" inputmode="tel" placeholder="07XX XXX XXXX" value="${values.phone ?? ''}"></label>
       <button class="btn primary" type="submit">تتبع</button>
     </form>
+    ${error ? html`<p class="alert error">${error}</p>` : ''}
     ${notFound ? html`<p class="alert error">ما لكينا طلب بهالمعلومات. تأكد من رقم الطلب ورقم الهاتف اللي سجلت بيه.</p>` : ''}
     ${order ? html`
       <section class="panel tracked">
