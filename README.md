@@ -36,6 +36,25 @@
 - المنتجات التجريبية تطلع حتى تشوف المتجر مليان. لما تضيف منتجاتك، أرشف التجريبية من لوحة التحكم، وغيّر `SEED_DEMO_CATALOG` إلى `false`.
 - أي تعديل ينرفع على فرع `main` ينشر تلقائياً.
 
+## النشر على Vercel (بدون بطاقة)
+
+Render يطلب بطاقة ائتمان حتى للخطة المجانية. Vercel ما يطلب، والمشروع جاهز له بملف `vercel.json` ومدخل `api/index.js`.
+
+1. سوّي قاعدة بيانات مجانية على [neon.tech](https://neon.tech) بمنطقة فرانكفورت، وانسخ الـ connection string.
+2. سجّل دخول بـ [vercel.com](https://vercel.com) بحساب GitHub، واختار **Add New → Project**، واختار مستودع `CINEMA-AI`.
+3. ضيف المتغيرات (Environment Variables):
+   - `DATABASE_URL`: رابط Neon، و`DATABASE_SSL`: `require`
+   - `ADMIN_EMAIL` و`ADMIN_PASSWORD` و`ANTHROPIC_API_KEY`: نفس شرح Render فوق.
+   - `APP_SECRET`: 32 حرف عشوائي أو أكثر (`openssl rand -hex 32`).
+   - `CRON_SECRET`: نص عشوائي، يحمي رابط الأتمتة اليومي.
+   - `NODE_ENV`: `production`، و`DEFAULT_COUNTRY_CODE`: `964`، و`SEED_DEMO_CATALOG`: `true`.
+4. اضغط **Deploy**. الجداول وحساب المالك تنبني لوحدها مع أول زيارة.
+
+**الفرق عن Render:**
+- الأتمتة (تذكير السلة، طلب التقييم، التنبيهات) تشتغل **مرة باليوم** الساعة 10 الصبح بتوقيت بغداد، لأن الخطة المجانية بـ Vercel تسمح بـ Cron يومي بس. على Render تشتغل كل 5 دقايق.
+- Vercel يقبل طلبات لحد 4.5 ميغا تقريباً، فالصورة الأكبر من هيچ ما تنرفع.
+- قاعدة Neon المجانية ما تنتهي.
+
 ## التشغيل محلياً
 
 يحتاج Node.js 22 أو أحدث، و PostgreSQL 14 أو أحدث.

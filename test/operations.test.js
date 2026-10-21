@@ -4,6 +4,7 @@ import {
   checkoutForm, Client, db, pool, productBySku, resetDatabase, startServer, visitorWithCart,
 } from './helpers.js';
 import { runOnce } from '../src/automation/worker.js';
+import { config } from '../src/config.js';
 import { handleWhatsApp } from '../src/routes/webhooks.js';
 
 let server;
@@ -179,6 +180,20 @@ describe('automation and WhatsApp', () => {
     assert.equal(messages.length, 1);
     assert.equal(messages[0].status, 'skipped');
     assert.match(messages[0].body, /\/cart\/open\//);
+  });
+
+  test('the cron route runs the jobs only with the right secret and is off without one', async () => {
+    const client = new Client(server.base);
+    assert.equal((await client.get('/cron/automation')).status, 404);
+    Object.assign(config.automation, { cronSecret: 'test-cron-secret', enabled: true });
+    try {
+      assert.equal((await client.request('/cron/automation', { headers: { authorization: 'Bearer wrong' } })).status, 404);
+      const res = await client.request('/cron/automation', { headers: { authorization: 'Bearer test-cron-secret' } });
+      assert.equal(res.status, 200);
+      assert.ok('abandonedCarts' in res.json());
+    } finally {
+      Object.assign(config.automation, { cronSecret: '', enabled: false });
+    }
   });
 
   test('incoming WhatsApp messages are stored once, linked to a customer, and answered', async () => {

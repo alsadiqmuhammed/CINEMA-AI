@@ -122,26 +122,28 @@ export async function runOnce() {
   return result;
 }
 
+/** Runs the jobs unless another instance is already running them; returns null when skipped. */
+export async function runLocked() {
+  // Advisory lock held on one connection: with several app instances only one runs the jobs.
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query('SELECT pg_try_advisory_lock(727002) AS ok');
+    if (!rows[0].ok) return null;
+    try {
+      return await runOnce();
+    } finally {
+      await client.query('SELECT pg_advisory_unlock(727002)');
+    }
+  } finally {
+    client.release();
+  }
+}
+
 let timer = null;
 
 export function start() {
   if (!auto.enabled || timer) return;
-  const tick = async () => {
-    // Advisory lock held on one connection: with several app instances only one runs the jobs.
-    const client = await pool.connect();
-    try {
-      const { rows } = await client.query('SELECT pg_try_advisory_lock(727002) AS ok');
-      if (!rows[0].ok) return;
-      try {
-        await runOnce();
-      } finally {
-        await client.query('SELECT pg_advisory_unlock(727002)');
-      }
-    } finally {
-      client.release();
-    }
-  };
-  timer = setInterval(() => tick().catch((e) => console.error('automation tick failed', e)), auto.intervalMinutes * 60_000);
+  timer = setInterval(() => runLocked().catch((e) => console.error('automation tick failed', e)), auto.intervalMinutes * 60_000);
   timer.unref();
 }
 

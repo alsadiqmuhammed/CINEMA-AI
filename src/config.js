@@ -10,8 +10,9 @@ export const config = {
   isProduction: env.NODE_ENV === 'production',
   port: int('PORT', 3000),
   secret: env.APP_SECRET ?? 'dev-only-secret-change-me',
-  // Render sets RENDER_EXTERNAL_URL to the service's public address.
-  baseUrl: (env.APP_BASE_URL || env.RENDER_EXTERNAL_URL || 'http://localhost:3000').replace(/\/$/, ''),
+  // Render sets RENDER_EXTERNAL_URL to the service's public address; Vercel sets the production host without a scheme.
+  baseUrl: (env.APP_BASE_URL || env.RENDER_EXTERNAL_URL
+    || (env.VERCEL_PROJECT_PRODUCTION_URL && `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`) || 'http://localhost:3000').replace(/\/$/, ''),
   databaseUrl: env.DATABASE_URL ?? 'postgres://store:store@localhost:5432/store',
   databaseSsl: env.DATABASE_SSL ?? '',
   // Local numbers starting with 0 are stored in international form (needed by WhatsApp): 07XX… → 9647XX…
@@ -36,6 +37,8 @@ export const config = {
 
   automation: {
     enabled: env.AUTOMATION_ENABLED !== 'false',
+    // Vercel Cron sends this as a Bearer token; the cron route stays off while it is unset.
+    cronSecret: env.CRON_SECRET ?? '',
     intervalMinutes: int('AUTOMATION_INTERVAL_MINUTES', 5),
     abandonedCartHours: int('ABANDONED_CART_HOURS', 3),
     orderDelayHours: int('ORDER_DELAY_HOURS', 48),

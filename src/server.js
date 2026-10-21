@@ -33,6 +33,14 @@ export function createApp() {
     res.json({ ok: true, ai: aiEnabled() ? 'claude' : 'template', channels: channelStatus() });
   });
 
+  // Scheduled run for hosts without a long-lived process (Vercel Cron).
+  app.get('/cron/automation', async (req, res) => {
+    const { cronSecret, enabled } = config.automation;
+    if (!cronSecret || req.get('authorization') !== `Bearer ${cronSecret}`) return res.status(404).end();
+    if (!enabled) return res.json({ skipped: 'automation disabled' });
+    res.json((await worker.runLocked()) ?? { skipped: 'already running' });
+  });
+
   // Webhooks read the raw body for signature checks, so they mount before the body parsers.
   app.use('/webhooks', webhooks);
 
@@ -60,9 +68,17 @@ export function createApp() {
   return app;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+export function assertProductionConfig() {
   if (config.isProduction && (!process.env.APP_SECRET || process.env.APP_SECRET.length < 32)) {
-    console.error('APP_SECRET (32+ characters) is required in production.');
+    throw new Error('APP_SECRET (32+ characters) is required in production.');
+  }
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  try {
+    assertProductionConfig();
+  } catch (error) {
+    console.error(error.message);
     process.exit(1);
   }
   await migrate();
