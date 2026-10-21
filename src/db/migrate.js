@@ -27,6 +27,7 @@ async function acquireLock(client) {
 export async function migrate() {
   const client = await pool.connect();
   let locked = false;
+  let failed = false;
   try {
     // Nothing to apply (the usual case on every start) means no lock at all.
     if (!(await pendingFiles(client)).length) return;
@@ -47,9 +48,13 @@ export async function migrate() {
         throw new Error(`migration ${file} failed: ${error.message}`);
       }
     }
+  } catch (error) {
+    failed = true;
+    throw error;
   } finally {
     if (locked) await client.query('SELECT pg_advisory_unlock($1)', [LOCK_ID]).catch(() => {});
-    client.release();
+    // After a failure the connection may be mid-query or still hold the lock; close it rather than pool it.
+    client.release(failed);
   }
 }
 
