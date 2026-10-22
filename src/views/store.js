@@ -105,9 +105,12 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
 </html>`);
 }
 
+// Our own pictures are cached for a week; the version makes a redrawn one show at once.
+const asset = (url) => (url.startsWith('/static/') ? `${url}?v=${config.assetVersion}` : url);
+
 function productImage(p, { lazy = true, w = 800, h = 1000 } = {}) {
   return p.image_url
-    ? html`<img src="${p.image_url}" alt="${p.name}" width="${w}" height="${h}" ${lazy ? raw('loading="lazy"') : ''}>`
+    ? html`<img src="${asset(p.image_url)}" alt="${p.name}" width="${w}" height="${h}" ${lazy ? raw('loading="lazy"') : ''}>`
     : html`<span class="noimg" aria-hidden="true">${p.name.slice(0, 1)}</span>`;
 }
 
@@ -197,7 +200,7 @@ export function home({ settings, categories, newest, onSale, bestSellers, csrf }
           <div class="cards">
             ${categories.map((c) => html`
               <a class="cat-card" href="/c/${encodeURIComponent(c.slug)}">
-                <span class="cat-photo">${c.image_url ? html`<img src="${c.image_url}" alt="" width="720" height="380" loading="lazy">` : ''}</span>
+                <span class="cat-photo">${c.image_url ? html`<img src="${asset(c.image_url)}" alt="" width="720" height="380" loading="lazy">` : ''}</span>
                 <span class="cat-panel">
                   <b>${c.name}</b>
                   <span>${c.product_count} منتج، تبدي من ${formatMoney(c.min_price, settings.currency)}</span>
@@ -298,9 +301,9 @@ export function product({ settings, product: p, related, csrf }) {
     <article class="product">
       <div class="gallery">
         <div class="frame large">
-          ${images.length ? html`<img src="${images[0].url}" alt="${images[0].alt || p.name}" width="800" height="1000">` : html`<span class="noimg">${p.name.slice(0, 1)}</span>`}
+          ${images.length ? html`<img src="${asset(images[0].url)}" alt="${images[0].alt || p.name}" width="800" height="1000">` : html`<span class="noimg">${p.name.slice(0, 1)}</span>`}
         </div>
-        ${images.length > 1 ? html`<div class="thumbs">${images.map((img, i) => html`<button type="button" class="thumb ${i ? '' : 'current'}" data-src="${img.url}" aria-label="عرض الصورة ${i + 1}"><img src="${img.url}" alt="" loading="lazy"></button>`)}</div>` : ''}
+        ${images.length > 1 ? html`<div class="thumbs">${images.map((img, i) => html`<button type="button" class="thumb ${i ? '' : 'current'}" data-src="${asset(img.url)}" aria-label="عرض الصورة ${i + 1}"><img src="${asset(img.url)}" alt="" loading="lazy"></button>`)}</div>` : ''}
       </div>
       <div class="info">
         <h1>${p.name}</h1>
@@ -372,7 +375,7 @@ export function cart({ settings, view, csrf, error }) {
       <ul class="cart-items">
         ${items.map((item) => html`
           <li class="cart-line">
-            <a href="/p/${encodeURIComponent(item.slug)}" class="cart-thumb">${item.image_url ? html`<img src="${item.image_url}" alt="">` : ''}</a>
+            <a href="/p/${encodeURIComponent(item.slug)}" class="cart-thumb">${item.image_url ? html`<img src="${asset(item.image_url)}" alt="">` : ''}</a>
             <div class="grow">
               <a class="cart-name" href="/p/${encodeURIComponent(item.slug)}">${item.name}</a>
               <div class="muted">${formatMoney(item.price, settings.currency)}</div>
