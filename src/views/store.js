@@ -80,7 +80,7 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
 </head>
 <body>
   <a class="skip" href="#main">انتقل للمحتوى</a>
-  <p class="notice"><span>الدفع عند الاستلام، وتفحص طلبك قبل ما تدفع</span><span>توصيل لكل المحافظات ${shortFee(settings)}</span><span>ترجيع خلال 7 أيام</span></p>
+  <p class="notice"><span>الدفع عند الاستلام، وتفحص طلبك قبل ما تدفع</span><span>توصيل لكل المحافظات ${shortFee(settings)}</span><span>ترجيع خلال 7 أيام</span><span class="notice-short">دفع عند الاستلام، توصيل ${formatMoney(Number(settings.shipping_fee) || 0, settings.currency)}، ترجيع 7 أيام</span></p>
   <header class="bar">
     <a class="wordmark" href="/">${settings.store_name}</a>
     <nav aria-label="روابط المتجر">
@@ -99,7 +99,6 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
   ${added ? toast() : ''}
   <main id="main" class="wrap">${body}</main>
   <footer class="footer">
-    <div class="footer-name" aria-hidden="true">${settings.store_name}</div>
     <ul class="footer-promises">
       <li><b>تفحص قبل ما تدفع</b><span>تفتح طلبك ويه المندوب، وتدفع بس إذا عجبك.</span></li>
       <li><b>نتصل نأكد قبل الشحن</b><span>ما نشحن أي طلب قبل ما نسمع صوتك.</span></li>
@@ -114,7 +113,7 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
       <div class="footer-cols">
         ${categories.length ? html`<div><b>الأقسام</b>${categories.map((c) => html`<a href="/c/${encodeURIComponent(c.slug)}">${c.name}</a>`)}</div>` : ''}
         <div><b>تسوّق</b><a href="/products">كل المنتجات</a><a href="/offers">العروض</a><a href="/cart">السلة</a></div>
-        <div><b>المساعدة</b><a href="/policies">الشحن والاسترجاع</a><a href="/policies#privacy">الخصوصية</a>${settings.support_email ? html`<a href="mailto:${settings.support_email}">${settings.support_email}</a>` : ''}</div>
+        <div><b>المساعدة</b><a href="/policies">الشحن والترجيع</a><a href="/policies#privacy">الخصوصية</a>${settings.support_email ? html`<a href="mailto:${settings.support_email}">${settings.support_email}</a>` : ''}</div>
       </div>
     </div>
     <div class="footer-legal">
@@ -219,9 +218,10 @@ export function home({ settings, categories, newest, onSale, bestSellers, csrf }
     ${categories.length ? html`
       <section class="showcase" aria-labelledby="cats-title" data-pin="track">
         <div class="showcase-stage">
-          <img class="held" src="${SOUQ_PHOTOS.alley.src}" alt="${SOUQ_PHOTOS.alley.caption}" width="${SOUQ_PHOTOS.alley.w}" height="${SOUQ_PHOTOS.alley.h}" loading="lazy">
           <h2 id="cats-title" class="showcase-title">تسوّق حسب القسم</h2>
+          <img class="held" src="${SOUQ_PHOTOS.alley.src}" alt="${SOUQ_PHOTOS.alley.caption}" width="${SOUQ_PHOTOS.alley.w}" height="${SOUQ_PHOTOS.alley.h}" loading="lazy">
           <p class="held-caption">${SOUQ_PHOTOS.alley.caption}</p>
+          <div class="showcase-progress" aria-hidden="true"><span></span></div>
           <div class="cards">
             ${categories.map((c) => html`
               <a class="cat-card" href="/c/${encodeURIComponent(c.slug)}">
@@ -543,7 +543,7 @@ export function track({ order, values = {}, notFound, error, csrf }) {
     <p class="lead">رقم الطلب يطلعلك بصفحة التأكيد بعد ما تطلب، وبرسالة الواتساب إذا وصلتك. اكتبه ويه رقم الهاتف اللي طلبت بيه.</p>
     <form method="post" action="/track" class="form inline-form">
       <input type="hidden" name="_csrf" value="${csrf}">
-      <label>رقم الطلب <input name="number" required dir="ltr" value="${values.number ?? ''}"></label>
+      <label>رقم الطلب <input name="number" required dir="ltr" placeholder="مثل 7K2QX9P" value="${values.number ?? ''}"></label>
       <label>رقم الهاتف <input name="phone" required dir="ltr" inputmode="tel" placeholder="07XX XXX XXXX" value="${values.phone ?? ''}"></label>
       <button class="btn primary" type="submit">تتبع</button>
     </form>
@@ -570,7 +570,7 @@ export function policies({ settings }) {
     <h1 class="page-title">سياسات المتجر</h1>
     <section class="bands">
       <div class="band"><h2>الشحن والتوصيل</h2><p>${p.shipping}</p></div>
-      <div class="band"><h2>الاسترجاع والاستبدال</h2><p>${p.returns}</p></div>
+      <div class="band"><h2>الترجيع والاستبدال</h2><p>${p.returns}</p></div>
       <div class="band"><h2>الدفع</h2><p>${p.payment}</p></div>
       <div class="band" id="privacy"><h2>الخصوصية</h2><p>${p.privacy}</p></div>
       <div class="band" id="photos"><h2>مصادر الصور</h2><p>صور الأسواق بالموقع من أرشيفات مفتوحة عبر ويكيميديا كومنز: ${Object.values(SOUQ_PHOTOS).map((ph, i) => html`${i ? '، ' : ''}<a href="${ph.page}" rel="noopener">${ph.caption}</a> (${ph.credit})`)}.</p></div>

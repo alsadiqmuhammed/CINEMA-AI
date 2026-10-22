@@ -10,6 +10,7 @@
   const reel = poster?.querySelector('.reel');
   const showcase = document.querySelector('.showcase');
   const cards = showcase?.querySelector('.cards');
+  const bar = showcase?.querySelector('.showcase-progress span');
   const progress = (section) => {
     const box = section.getBoundingClientRect();
     const run = box.height - innerHeight;
@@ -27,6 +28,7 @@
       // Right to left: the row starts at the right edge and slides right to bring the rest in.
       const travel = Math.max(0, cards.scrollWidth - innerWidth);
       cards.style.transform = live ? `translateX(${progress(showcase) * travel}px)` : '';
+      if (bar) bar.style.scale = `${live ? progress(showcase) : 0} 1`;
     }
   };
   const ask = () => { if (!queued) { queued = true; requestAnimationFrame(paint); } };
@@ -103,6 +105,14 @@
   // On the home page the name is already on the poster; the bar's copy waits until the poster has passed.
   const wordmark = document.querySelector('.wordmark');
   const posterTitle = document.querySelector('.poster-title');
+  // On phones the header folds its links away while reading down, and brings them back on the way up.
+  const header = document.querySelector('.bar');
+  let lastY = scrollY;
+  addEventListener('scroll', () => {
+    header?.classList.toggle('tucked', scrollY > 160 && scrollY > lastY);
+    lastY = scrollY;
+  }, { passive: true });
+
   if (wordmark && posterTitle && 'IntersectionObserver' in window) {
     new IntersectionObserver(([e]) => wordmark.classList.toggle('hushed', e.isIntersecting)).observe(posterTitle);
   }

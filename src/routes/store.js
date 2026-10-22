@@ -115,7 +115,9 @@ store.get('/p/:slug', async (req, res) => {
   const product = await products.getBySlug(req.params.slug);
   if (!product) return render(req, res, views.notFound, { status: 404, meta: { title: 'الصفحة غير موجودة' } });
   const settings = await getSettings();
-  const related = await products.recommendations(product.id);
+  let related = await products.recommendations(product.id);
+  // A product page never ends empty: with nothing related, show the newest others.
+  if (!related.length) related = (await products.listActive({ limit: 5 })).filter((p) => p.id !== product.id).slice(0, 3);
   await render(req, res, views.product, {
     product,
     related,
@@ -131,7 +133,7 @@ store.get('/p/:slug', async (req, res) => {
 store.get('/cart', async (req, res) => {
   const view = await carts.view(await carts.findOpen(req.cookies[CART_COOKIE]));
   // An empty cart suggests where to start instead of ending the visit.
-  const suggestions = view.items.length ? [] : await products.listActive({ limit: 3 });
+  const suggestions = view.items.length ? [] : await products.listActive({ limit: 4 });
   await render(req, res, views.cart, { view, suggestions, error: CART_ERRORS[req.query.error], meta: { title: 'السلة' } });
 });
 
