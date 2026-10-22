@@ -9,17 +9,17 @@ const icon = {
   bag: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>'),
   plus: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'),
   chat: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>'),
+  menu: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16M4 16h16"/></svg>'),
+  cash: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>'),
+  eye: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>'),
+  truck: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h11v10H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.5"/><circle cx="17" cy="17.5" r="1.5"/></svg>'),
+  back: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5M4 12h16"/></svg>'),
+  phone: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1Z"/></svg>'),
+  next: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>'),
+  prev: raw('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>'),
 };
 
 export { GOVERNORATES };
-
-/** Real pictures of Iraqi souqs from open archives; credits are printed in the footer. */
-const SOUQ_PHOTOS = {
-  alley: { src: '/static/img/souq/baghdad-copper-bazaar-1932.jpg', w: 1600, h: 1133, caption: 'سوگ الصفافير ببغداد، 1932', credit: 'Matson Collection، ملكية عامة', page: 'https://commons.wikimedia.org/wiki/File:Iraq._(Mesopotamia)._Baghdad._Copper_bazaar_LOC_matpc.13278.tif' },
-  creek: { src: '/static/img/souq/basra-ashar-creek-1915.jpg', w: 1400, h: 1038, caption: 'شط العشار وسوگه بالبصرة، حوالي 1915', credit: 'Nationaal Archief، CC0', page: 'https://commons.wikimedia.org/wiki/File:Ashar_Creek_and_Bazaar,_Bestanddeelnr_158-1494.jpg' },
-  gold: { src: '/static/img/souq/basra-gold-market-2016.jpg', w: 1024, h: 768, caption: 'سوگ الذهب بالبصرة، 2016', credit: 'David Stanley، CC BY 2.0', page: 'https://commons.wikimedia.org/wiki/File:Basra_Gold_Market_(30363366263).jpg' },
-  painting: { src: '/static/img/souq/copper-bazaar-watercolour.jpg', w: 968, h: 1300, caption: 'سوگ الصفافير، لوحة مائية من أيام الحرب العالمية الأولى', credit: 'John Daniel Revel، ملكية عامة', page: 'https://commons.wikimedia.org/wiki/File:The_Copper_Bazaar,_Baghdad_Art.IWMART4041.jpg' },
-};
 
 /** Delivery time by governorate, as the shipping policy states it. */
 function deliveryDays(governorate) {
@@ -57,12 +57,17 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
   const pageTitle = title ? `${title} | ${settings.store_name}` : `${settings.store_name} | تسوّق أونلاين بالعراق، والدفع عند الاستلام`;
   const metaDescription = String(description ?? settings.store_tagline).replace(/\s*[\n•]+\s*/g, ' ').trim();
   const current = (href) => (path === href ? raw('aria-current="page"') : '');
+  const links = html`
+    <a href="/products" ${current('/products')}>كل المنتجات</a>
+    ${categories.map((c) => html`<a href="/c/${encodeURIComponent(c.slug)}" ${current(`/c/${c.slug}`)}>${c.name}</a>`)}
+    <a href="/offers" ${current('/offers')}>العروض</a>
+    <a href="/track" ${current('/track')}>تتبع طلبك</a>`;
   return '<!doctype html>' + toString(html`
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0c0a08">
+  <meta name="theme-color" content="#f5f5f7">
   <title>${pageTitle}</title>
   <meta name="description" content="${metaDescription}">
   ${canonical ? html`<link rel="canonical" href="${config.baseUrl}${canonical}">` : ''}
@@ -80,45 +85,38 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
 </head>
 <body>
   <a class="skip" href="#main">انتقل للمحتوى</a>
-  <p class="notice"><span>الدفع عند الاستلام، وتفحص طلبك قبل ما تدفع</span><span>توصيل لكل المحافظات ${shortFee(settings)}</span><span>ترجيع خلال 7 أيام</span><span class="notice-short">دفع عند الاستلام، توصيل ${formatMoney(Number(settings.shipping_fee) || 0, settings.currency)}، ترجيع 7 أيام</span></p>
-  <header class="bar">
-    <a class="wordmark" href="/" translate="no">${settings.store_name}</a>
-    <nav aria-label="روابط المتجر">
-      <a href="/products" ${current('/products')}>المنتجات</a>
-      <a href="/offers" ${current('/offers')}>العروض</a>
-      <a href="/track" ${current('/track')}>تتبع طلبك</a>
-    </nav>
-    <div class="bar-end">
-      <form class="bar-search" action="/search" method="get" role="search">
-        <input type="search" name="q" placeholder="دوّر: عود، مسك، هدية…" aria-label="بحث في المنتجات">
-        <button type="submit" aria-label="ابحث">${icon.search}</button>
-      </form>
-      <a href="/cart" class="cart-button" aria-label="السلة، فيها ${cartCount} منتج">${icon.bag}<span>السلة</span><b id="cart-count">${cartCount}</b></a>
+  <header class="gnav">
+    <div class="gnav-in">
+      <a class="wordmark" href="/" translate="no">${settings.store_name}</a>
+      <nav class="gnav-links" aria-label="روابط المتجر">${links}</nav>
+      <details class="gnav-menu">
+        <summary aria-label="القائمة">${icon.menu}</summary>
+        <nav aria-label="روابط المتجر">${links}</nav>
+      </details>
+      <div class="gnav-end">
+        <form class="bar-search" action="/search" method="get" role="search">
+          <input type="search" name="q" placeholder="دوّر: عود، مسك، هدية…" aria-label="بحث في المنتجات">
+          <button type="submit" aria-label="ابحث">${icon.search}</button>
+        </form>
+        <a href="/cart" class="cart-button" aria-label="السلة، فيها ${cartCount} منتج">${icon.bag}<b id="cart-count" ${cartCount ? '' : raw('hidden')}>${cartCount}</b></a>
+      </div>
     </div>
   </header>
+  <p class="ribbon">الدفع عند الاستلام، وتفحص طلبك قبل ما تدفع. توصيل لكل المحافظات ${shortFee(settings)}. <a href="/policies">اعرف أكثر</a></p>
   ${added ? toast() : ''}
   <main id="main" class="wrap">${body}</main>
   <footer class="footer">
-    <ul class="footer-promises">
-      <li><b>تفحص قبل ما تدفع</b><span>تفتح طلبك ويه المندوب، وتدفع بس إذا عجبك.</span></li>
-      <li><b>نتصل نأكد قبل الشحن</b><span>ما نشحن أي طلب قبل ما نسمع صوتك.</span></li>
-      <li><b>ترجيع خلال 7 أيام</b><span>إذا المنتج بحالته الأصلية، نرتب الرجعة وياك.</span></li>
-    </ul>
-    <div class="footer-row">
-      <div class="footer-ways">
-        <button type="button" class="way" data-open-chat>اسألنا بالمحادثة</button>
-        <a class="way" href="/track">تتبع طلبك</a>
-        ${settings.support_phone ? html`<a class="way" href="${whatsappLink(settings)}" rel="noopener">واتساب <span dir="ltr">${settings.support_phone}</span></a>` : ''}
-      </div>
+    <div class="footer-in">
+      <p class="footer-note">الدفع نقداً عند الاستلام بكل المحافظات، وتكدر تفحص طلبك قبل ما تدفع. الترجيع خلال 7 أيام إذا المنتج بحالته الأصلية. صور المنتجات توضيحية.</p>
       <div class="footer-cols">
-        ${categories.length ? html`<div><b>الأقسام</b>${categories.map((c) => html`<a href="/c/${encodeURIComponent(c.slug)}">${c.name}</a>`)}</div>` : ''}
-        <div><b>تسوّق</b><a href="/products">كل المنتجات</a><a href="/offers">العروض</a><a href="/cart">السلة</a></div>
-        <div><b>المساعدة</b><a href="/policies">الشحن والترجيع</a><a href="/policies#privacy">الخصوصية</a>${settings.support_email ? html`<a href="mailto:${settings.support_email}">${settings.support_email}</a>` : ''}</div>
+        ${categories.length ? html`<div><b>تسوّق</b>${categories.map((c) => html`<a href="/c/${encodeURIComponent(c.slug)}">${c.name}</a>`)}<a href="/offers">العروض</a></div>` : ''}
+        <div><b>طلبك</b><a href="/cart">السلة</a><a href="/track">تتبع طلبك</a><a href="/policies">الشحن والترجيع</a></div>
+        <div><b>تواصل ويانا</b><button type="button" class="link" data-open-chat>اسألنا بالمحادثة</button>${settings.support_phone ? html`<a href="${whatsappLink(settings)}" rel="noopener">واتساب <span dir="ltr">${settings.support_phone}</span></a>` : ''}${settings.support_email ? html`<a href="mailto:${settings.support_email}">${settings.support_email}</a>` : ''}</div>
       </div>
-    </div>
-    <div class="footer-legal">
-      <p>${settings.store_name}، متجر عراقي أونلاين. <a href="/policies#photos">مصادر الصور</a></p>
-      <a href="#main">للأعلى</a>
+      <div class="footer-legal">
+        <p translate="no">${settings.store_name}</p>
+        <p>متجر عراقي أونلاين. <a href="/policies">السياسات</a> <a href="/policies#privacy">الخصوصية</a></p>
+      </div>
     </div>
   </footer>
   <div id="chat-root"></div>
@@ -159,22 +157,31 @@ function quickAdd(p, csrf, back, label = 'ضيف') {
     </form>`;
 }
 
-function productCard(p, currency, { csrf, back } = {}) {
+/** The line under a product's name: the first sentence of its description. */
+const teaser = (p) => String(p.description ?? '').split(/\n+|(?<=[.!؟])\s/)[0].slice(0, 90);
+
+function flagOf(p) {
   const onSale = p.compare_at_price > p.price;
-  const saving = onSale ? Math.round((1 - p.price / p.compare_at_price) * 100) : 0;
+  if (!(p.stock > 0)) return 'نفدت الكمية';
+  if (onSale) return `وفّر ${Math.round((1 - p.price / p.compare_at_price) * 100)}%`;
+  if (p.stock <= (p.low_stock_at ?? 0)) return `باقي ${p.stock} بس`;
+  return '';
+}
+
+function productCard(p, currency, { csrf, back, eyebrow } = {}) {
+  const flag = eyebrow ?? flagOf(p);
   return html`
-    <article class="product-card">
-      <a class="card-link" href="/p/${encodeURIComponent(p.slug)}">
-        <div class="frame">
-          ${productImage(p)}
-          ${p.stock > 0
-            ? (onSale ? html`<span class="flag">وفّر ${saving}%</span>` : p.stock <= (p.low_stock_at ?? 0) ? html`<span class="flag">باقي ${p.stock}</span>` : '')
-            : html`<span class="flag out">نفدت الكمية</span>`}
-        </div>
-        ${p.category_name ? html`<span class="card-kind">${p.category_name}</span>` : ''}
-        <h3>${p.name}</h3>
+    <article class="tile">
+      <a class="tile-link" href="/p/${encodeURIComponent(p.slug)}">
+        ${productImage(p, { sizes: '(max-width: 760px) 80vw, 400px' })}
+        <span class="tile-text">
+          ${flag ? html`<span class="tile-eyebrow">${flag}</span>` : ''}
+          <h3 class="tile-name">${p.name}</h3>
+          <span class="tile-desc">${teaser(p)}</span>
+          ${priceTag(p, currency)}
+        </span>
       </a>
-      <div class="card-foot">${priceTag(p, currency)}${quickAdd(p, csrf, back)}</div>
+      ${quickAdd(p, csrf, back)}
     </article>`;
 }
 
@@ -183,127 +190,85 @@ export function grid(items, currency, options = {}) {
   return html`<div class="grid">${items.map((p) => productCard(p, currency, options))}</div>`;
 }
 
+/** A row of cards that scrolls sideways, with arrows on wide screens (Apple's store shelf). */
+function shelf({ id, lead, rest, items, more }) {
+  return html`
+    <section class="shelf" aria-labelledby="${id}">
+      <div class="shelf-head">
+        <h2 class="shelf-title" id="${id}"><b>${lead}</b> ${rest}</h2>
+        ${more ?? ''}
+      </div>
+      <div class="shelf-row" data-shelf tabindex="0" aria-label="${lead}">${items}</div>
+      <div class="paddles"><button type="button" class="paddle" data-dir="-1" aria-label="السابق">${icon.prev}</button><button type="button" class="paddle" data-dir="1" aria-label="التالي">${icon.next}</button></div>
+    </section>`;
+}
+
 function categoryNav(categories, current) {
   if (!categories?.length) return '';
   return html`
-    <nav class="chips" aria-label="الأقسام">
-      <a class="chip ${current ? '' : 'active'}" href="/products">الكل</a>
-      ${categories.map((c) => html`<a class="chip ${current === c.slug ? 'active' : ''}" href="/c/${encodeURIComponent(c.slug)}">${c.name}</a>`)}
+    <nav class="pills" aria-label="الأقسام">
+      <a class="pill ${current ? '' : 'active'}" href="/products">الكل</a>
+      ${categories.map((c) => html`<a class="pill ${current === c.slug ? 'active' : ''}" href="/c/${encodeURIComponent(c.slug)}">${c.name}</a>`)}
     </nav>`;
 }
 
 export function home({ settings, categories, newest, onSale, bestSellers, csrf }) {
-  const [before, after] = String(settings.store_tagline).split(/،\s*/);
-  // The reel: what the store sells, passing through the frame while the name holds still.
-  const reel = [...onSale, ...bestSellers, ...newest].filter((p, i, all) => all.findIndex((q) => q.id === p.id) === i).slice(0, 6);
-  const list = newest.length ? newest : reel;
-  const first = list[0];
-  const policies = settings.policies;
+  const latest = (newest.length ? newest : [...onSale, ...bestSellers]).filter((p, i, all) => all.findIndex((q) => q.id === p.id) === i);
+  const card = (p, eyebrow) => productCard(p, settings.currency, { csrf, back: '/', eyebrow });
+  const why = [
+    [icon.cash, 'الدفع عند الاستلام.', 'تدفع نقداً للمندوب من يوصلك الطلب. ماكو بطاقة ولا تحويل.'],
+    [icon.eye, 'تفحص قبل ما تدفع.', 'تفتح طلبك ويه المندوب وتشوفه بعينك، وتدفع بس إذا عجبك.'],
+    [icon.phone, 'نتصل نأكد قبل الشحن.', 'ما نشحن أي طلب قبل ما نسمع صوتك ونتأكد من العنوان.'],
+    [icon.back, 'ترجيع خلال 7 أيام.', 'إذا ما عجبك والمنتج بحالته الأصلية، نرتب الرجعة وياك.'],
+  ];
   return html`
-    <section class="poster" aria-labelledby="hero-title" data-pin="reel">
-      <div class="poster-stage">
-        <h1 id="hero-title" class="poster-title" translate="no">${settings.store_name}</h1>
-        <div class="poster-foot">
-          <p>عطور وعود وبخور وهدايا مختارة. نوصل لكل المحافظات، تفحص طلبك ويه المندوب، وتدفع من يعجبك.</p>
-          <a class="btn primary" href="/products">تصفّح المنتجات</a>
-        </div>
-        <p class="half half-start">${before}</p>
-        <div class="reel" data-steps="${reel.length}">
-          <div class="reel-track">
-            ${reel.map((p, i) => html`
-              <a class="reel-frame" href="/p/${encodeURIComponent(p.slug)}">
-                <span class="reel-photo">${productImage(p, { lazy: i > 0, w: 1200, h: 900, sizes: '(max-width: 1000px) 50vw, 34vw' })}</span>
-                <span class="reel-caption"><span>${p.name}</span><span>${formatMoney(p.price, settings.currency)}</span></span>
-              </a>`)}
-          </div>
-        </div>
-        ${after ? html`<p class="half half-end">${after}</p>` : ''}
+    <section class="store-head">
+      <h1 class="store-title" translate="no">${settings.store_name}</h1>
+      <div class="store-pitch">
+        <p>أحلى طريقة تشتري بيها العطور والعود والهدايا.</p>
+        <button type="button" class="more" data-open-chat>اسأل مختص</button>
+        <a class="more" href="/track">تتبع طلبك</a>
       </div>
     </section>
 
     ${categories.length ? html`
-      <section class="showcase" aria-labelledby="cats-title" data-pin="track">
-        <div class="showcase-stage">
-          <h2 id="cats-title" class="showcase-title">تسوّق حسب القسم</h2>
-          <img class="held" src="${SOUQ_PHOTOS.alley.src}" alt="${SOUQ_PHOTOS.alley.caption}" width="${SOUQ_PHOTOS.alley.w}" height="${SOUQ_PHOTOS.alley.h}" loading="lazy">
-          <p class="held-caption">${SOUQ_PHOTOS.alley.caption}</p>
-          <div class="showcase-progress" aria-hidden="true"><span></span></div>
-          <div class="cards">
-            ${categories.map((c) => html`
-              <a class="cat-card" href="/c/${encodeURIComponent(c.slug)}">
-                <span class="cat-photo">${c.image_url ? html`<img src="${asset(c.image_url)}" alt="" width="720" height="380" loading="lazy">` : ''}</span>
-                <span class="cat-panel">
-                  <b>${c.name}</b>
-                  <span>${c.product_count >= 5 ? `${c.product_count} ${c.product_count < 11 ? 'منتجات' : 'منتج'}، ` : ''}من ${formatMoney(c.min_price, settings.currency)}</span>
-                </span>
-              </a>`)}
-          </div>
-        </div>
-      </section>` : ''}
+      <nav class="catnav" aria-label="الأقسام">
+        ${categories.map((c) => html`
+          <a class="catnav-item" href="/c/${encodeURIComponent(c.slug)}">
+            <span class="catnav-img">${c.image_url ? html`<img src="${asset(c.image_url)}" ${srcset(c.image_url, '120px')} alt="" width="120" height="150" loading="lazy">` : ''}</span>
+            <span>${c.name}</span>
+          </a>`)}
+        <a class="catnav-item" href="/offers"><span class="catnav-img catnav-word">٪</span><span>العروض</span></a>
+      </nav>` : ''}
 
-    ${list.length ? html`
-      <section class="picklist" aria-labelledby="new-title">
-        <div class="picklist-photo">
-          ${list.map((p, i) => html`<div class="pick-image ${i ? '' : 'active'}" data-pick="${p.id}">${productImage(p, { w: 800, h: 1000 })}</div>`)}
-        </div>
-        <div class="picklist-body">
-          <h2 id="new-title" class="section-title">${newest.length ? 'وصلنا جديد' : 'من السوگ'}</h2>
-          <ol class="picks">
-            ${list.map((p, i) => html`
-              <li class="pick ${i ? '' : 'active'}" data-pick="${p.id}">
-                <a href="/p/${encodeURIComponent(p.slug)}" class="pick-row"><span class="pick-name">${p.name}</span>${priceTag(p, settings.currency)}</a>
-                <div class="pick-more">
-                  <p>${String(p.description).split(/\n+/)[0]}</p>
-                  ${quickAdd(p, csrf, '/#new-title', 'ضيف للسلة')}
-                </div>
-              </li>`)}
-          </ol>
-          <a class="more" href="/products">كل المنتجات</a>
-        </div>
-      </section>` : ''}
+    ${latest.length ? shelf({ id: 'latest', lead: 'الأحدث.', rest: 'شوف شنو وصل جديد.', items: latest.map((p, i) => card(p, i < 2 && newest.length ? 'جديد' : undefined)) }) : ''}
 
-    ${onSale.length >= 3 ? html`
-      <section class="offers-band" aria-labelledby="offers-title">
-        <div class="offers-head"><h2 id="offers-title" class="section-title">عروض هسة</h2><a class="more" href="/offers">كل العروض</a></div>
-        ${grid(onSale.slice(0, 3), settings.currency, { csrf, back: '/#offers-title' })}
-      </section>` : ''}
-
-    <section class="verbs" aria-labelledby="how-title">
-      <h2 id="how-title" class="section-title">شلون تطلب</h2>
-      <ol class="verb-row">
-        <li class="verb-panel">
-          <img src="${SOUQ_PHOTOS.gold.src}" alt="${SOUQ_PHOTOS.gold.caption}" width="${SOUQ_PHOTOS.gold.w}" height="${SOUQ_PHOTOS.gold.h}" loading="lazy">
-          <h3 class="verb">اختار</h3>
-          <p class="verb-note">تصفح الأقسام أو اسألنا بالمحادثة، وضيف اللي يعجبك للسلة.</p>
-        </li>
-        <li class="verb-panel">
-          <img src="${SOUQ_PHOTOS.creek.src}" alt="${SOUQ_PHOTOS.creek.caption}" width="${SOUQ_PHOTOS.creek.w}" height="${SOUQ_PHOTOS.creek.h}" loading="lazy">
-          <h3 class="verb">نتصل نأكد</h3>
-          <p class="verb-note">اسمك ورقمك وعنوانك بأقرب نقطة دالة. نتصل بيك قبل ما نشحن.</p>
-        </li>
-        <li class="verb-panel">
-          <img src="${SOUQ_PHOTOS.painting.src}" alt="${SOUQ_PHOTOS.painting.caption}" width="${SOUQ_PHOTOS.painting.w}" height="${SOUQ_PHOTOS.painting.h}" loading="lazy">
-          <h3 class="verb">تفحص وتدفع</h3>
-          <p class="verb-note">تفتح طلبك ويه المندوب، وتدفع نقداً بس إذا عجبك.</p>
-        </li>
-      </ol>
-    </section>
-
-    <section class="estimate" aria-labelledby="estimate-title">
-      <h2 id="estimate-title" class="section-title">شكد يطول التوصيل لمحافظتك؟</h2>
-      <div class="estimate-body" data-estimate data-fee="${deliveryFee(settings)}">
-        <label for="gov">محافظتك</label>
+    ${shelf({ id: 'why', lead: 'الفرق بسوگ.', rest: 'أسباب أكثر تتسوّق ويانا مرتاح.', items: html`
+      ${why.map(([ic, title, text]) => html`<article class="tile tile-light"><span class="tile-icon">${ic}</span><h3 class="tile-name">${title}</h3><p class="tile-desc">${text}</p></article>`)}
+      <article class="tile tile-light tile-wide" data-estimate data-fee="${deliveryFee(settings)}">
+        <span class="tile-icon">${icon.truck}</span>
+        <h3 class="tile-name">شكد يطول التوصيل؟</h3>
+        <label for="gov" class="tile-desc">اختار محافظتك</label>
         <select id="gov">${GOVERNORATES.map((g) => html`<option data-days="${deliveryDays(g)}">${g}</option>`)}</select>
         <output for="gov" aria-live="polite"><b>${deliveryDays('بغداد')}</b><span>التوصيل ${deliveryFee(settings)}</span></output>
+      </article>` })}
+
+    ${onSale.length ? shelf({ id: 'offers', lead: 'العروض.', rest: 'أسعار أقل لحد ما تخلص الكمية.', items: onSale.map((p) => card(p)), more: html`<a class="more" href="/offers">كل العروض</a>` }) : ''}
+
+    <section class="help">
+      <div class="help-card">
+        <h2>عندك سؤال؟ <span>احجي ويانا.</span></h2>
+        <p>مساعدنا يرد بثواني على الأسعار والتوفّر وطلبك. وإذا تريد موظف، يحوّلك لواحد من الفريق.</p>
+        <div class="help-actions"><button type="button" class="btn primary" data-open-chat>ابدي المحادثة</button><a class="btn" href="/track">تتبع طلبك</a></div>
       </div>
     </section>
 
-    <section class="bands" aria-labelledby="faq-title">
-      <div class="band band-head"><h2 id="faq-title" class="section-title">أسئلة الزبائن</h2></div>
-      <div class="band"><h3>شلون أدفع؟</h3><p>${policies.payment}</p></div>
-      <div class="band"><h3>إذا ما عجبني، أكدر أرجّعه؟</h3><p>${policies.returns}</p></div>
-      <div class="band"><h3>شلون أتابع طلبي؟</h3><p>من <a href="/track">تتبع طلبك</a> برقم الطلب ورقم هاتفك، أو اسألنا بالمحادثة.</p></div>
-      <div class="band"><h3>أحجي ويه منو بالمحادثة؟</h3><p>مساعد آلي يرد بثواني على الأسعار والتوفّر. إذا تريد موظف، اكتب "أريد موظف" ويحوّلك لواحد من الفريق.</p></div>
+    <section class="faq-home" aria-labelledby="faq-title">
+      <h2 class="shelf-title" id="faq-title"><b>أسئلة الزبائن.</b></h2>
+      <details><summary>شلون أدفع؟</summary><p>${settings.policies.payment}</p></details>
+      <details><summary>إذا ما عجبني، أكدر أرجّعه؟</summary><p>${settings.policies.returns}</p></details>
+      <details><summary>شلون أتابع طلبي؟</summary><p>من <a href="/track">تتبع طلبك</a> برقم الطلب ورقم هاتفك، أو اسألنا بالمحادثة.</p></details>
+      <details><summary>أحجي ويه منو بالمحادثة؟</summary><p>مساعد آلي يرد بثواني على الأسعار والتوفّر. إذا تريد موظف، اكتب "أريد موظف" ويحوّلك لواحد من الفريق.</p></details>
     </section>`;
 }
 
@@ -357,8 +322,9 @@ export function product({ settings, product: p, related, csrf }) {
         ${images.length > 1 ? html`<div class="thumbs">${images.map((img, i) => html`<button type="button" class="thumb ${i ? '' : 'current'}" data-src="${asset(img.url)}" aria-label="عرض الصورة ${i + 1}"><img src="${asset(img.url)}" alt="" loading="lazy"></button>`)}</div>` : ''}
       </div>
       <div class="info">
-        ${p.category_name ? html`<p class="card-kind">${p.category_name}</p>` : ''}
+        ${flagOf(p) ? html`<p class="eyebrow-new">${flagOf(p)}</p>` : ''}
         <h1>${p.name}</h1>
+        <p class="info-teaser">${teaser(p)}</p>
         <p class="price big"><span>${formatMoney(p.price, settings.currency)}</span>${onSale ? html`<s>${formatMoney(p.compare_at_price, settings.currency)}</s>` : ''}</p>
         ${p.stock > 0
           ? html`<form method="post" action="/cart/add" class="buy-form">
@@ -372,19 +338,19 @@ export function product({ settings, product: p, related, csrf }) {
             ${p.stock <= p.low_stock_at ? html`<p class="stock-note">باقي ${p.stock} بس</p>` : ''}`
           : html`<p class="stock-note">خلص هسة. <button class="link" type="button" data-open-chat data-ask="أريد أعرف شوكت يرجع ${p.name}">اسألنا</button> ونبلغك أول ما يرجع.</p>`}
         <dl class="assurances">
-          <div><dt>الدفع</dt><dd>نقداً عند الاستلام، وتفحص طلبك قبل ما تدفع.</dd></div>
-          <div><dt>التوصيل</dt><dd>لكل المحافظات ${deliveryFee(settings)}. ${settings.policies.shipping}</dd></div>
-          <div><dt>الترجيع</dt><dd>خلال 7 أيام إذا المنتج بحالته الأصلية.</dd></div>
+          <div>${icon.truck}<dt>التوصيل</dt><dd>لكل المحافظات ${deliveryFee(settings)}. ${settings.policies.shipping}</dd></div>
+          <div>${icon.cash}<dt>الدفع عند الاستلام</dt><dd>نقداً للمندوب، وتفحص طلبك قبل ما تدفع.</dd></div>
+          <div>${icon.back}<dt>ترجيع خلال 7 أيام</dt><dd>إذا المنتج بحالته الأصلية.</dd></div>
         </dl>
         <p class="product-ways">
-          <button class="link" type="button" data-open-chat data-ask="عندي سؤال عن ${p.name}">اسأل عن هذا المنتج</button>
-          <a class="link" href="https://wa.me/?text=${encodeURIComponent(`${p.name}، ${formatMoney(p.price, settings.currency)}: ${config.baseUrl}/p/${encodeURIComponent(p.slug)}`)}" rel="noopener">دزّه لواحد بالواتساب</a>
+          <button class="more" type="button" data-open-chat data-ask="عندي سؤال عن ${p.name}">عندك سؤال؟ احجي ويا مختص</button>
+          <a class="more" href="https://wa.me/?text=${encodeURIComponent(`${p.name}، ${formatMoney(p.price, settings.currency)}: ${config.baseUrl}/p/${encodeURIComponent(p.slug)}`)}" rel="noopener">دزّه لواحد بالواتساب</a>
         </p>
         <div class="description">${p.description.split(/\n+/).filter(Boolean).map((line) => html`<p>${line}</p>`)}</div>
         ${p.faq?.length ? html`<section class="faq"><h2>أسئلة عن المنتج</h2>${p.faq.map((f) => html`<details><summary>${f.q}</summary><p>${f.a}</p></details>`)}</section>` : ''}
       </div>
     </article>
-    ${related.length ? html`<section class="shelf"><h2 class="section-title">قد يعجبك أيضاً</h2>${grid(related, settings.currency, { csrf, back: `/p/${encodeURIComponent(p.slug)}` })}</section>` : ''}`;
+    ${related.length ? shelf({ id: 'related', lead: 'قد يعجبك أيضاً.', rest: 'يمشي ويا اختيارك.', items: related.map((r) => productCard(r, settings.currency, { csrf, back: `/p/${encodeURIComponent(p.slug)}` })) }) : ''}`;
 }
 
 export function productJsonLd(p, settings) {
@@ -426,10 +392,14 @@ export function cart({ settings, view, csrf, error, suggestions = [] }) {
         <p class="lead">سلتك بعدها فارغة. شوف العطور والهدايا اللي اخترناها.</p>
         <a class="btn primary" href="/products">ابدي التسوّق</a>
       </section>
-      ${suggestions.length ? html`<section class="shelf"><h2 class="section-title">تبدي منها</h2>${grid(suggestions, settings.currency, { csrf, back: '/cart' })}</section>` : ''}`;
+      ${suggestions.length ? shelf({ id: 'start', lead: 'تبدي منها.', rest: 'مختارات من المتجر.', items: suggestions.map((p) => productCard(p, settings.currency, { csrf, back: '/cart' })) }) : ''}`;
   }
   return html`
-    <h1 class="page-title">السلة</h1>
+    <header class="bag-head">
+      <h1 class="page-title">مجموع سلتك ${formatMoney(total, settings.currency)}.</h1>
+      <p class="lead">${shipping ? `التوصيل ${formatMoney(shipping, settings.currency)}، والدفع عند الاستلام.` : 'التوصيل مجاني، والدفع عند الاستلام.'}</p>
+      <a class="btn primary" href="/checkout">إتمام الطلب</a>
+    </header>
     ${error ? html`<p class="alert" role="alert">${error}</p>` : ''}
     <div class="cart-layout">
       <ul class="cart-items">
@@ -579,7 +549,6 @@ export function policies({ settings }) {
       <div class="band"><h2>الترجيع والاستبدال</h2><p>${p.returns}</p></div>
       <div class="band"><h2>الدفع</h2><p>${p.payment}</p></div>
       <div class="band" id="privacy"><h2>الخصوصية</h2><p>${p.privacy}</p></div>
-      <div class="band" id="photos"><h2>مصادر الصور</h2><p>صور الأسواق بالموقع من أرشيفات مفتوحة عبر ويكيميديا كومنز: ${Object.values(SOUQ_PHOTOS).map((ph, i) => html`${i ? '، ' : ''}<a href="${ph.page}" rel="noopener">${ph.caption}</a> (${ph.credit})`)}.</p></div>
     </section>`;
 }
 
