@@ -93,7 +93,8 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
   <meta property="og:image" content="${ogImage ?? `${config.baseUrl}/static/img/products/gift.jpg`}">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
-  <link rel="preload" href="/static/fonts/noto-sans-arabic-arabic-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/zain-arabic-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/zain-arabic-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/css/store.css?v=${config.assetVersion}">
   ${jsonLd ? raw(`<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>`) : ''}
 </head>
