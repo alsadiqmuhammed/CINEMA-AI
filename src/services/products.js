@@ -119,7 +119,7 @@ export async function categories() {
 
 /** Categories shown to shoppers: only those with active products, with a count and a cover image. */
 export async function activeCategories() {
-  return db.many(`SELECT c.*, COUNT(p.id)::int AS product_count,
+  return db.many(`SELECT c.*, COUNT(p.id)::int AS product_count, MIN(p.price) AS min_price,
                          (SELECT i.url FROM products p2 JOIN product_images i ON i.product_id = p2.id
                            WHERE p2.category_id = c.id AND p2.status = 'active'
                            ORDER BY p2.created_at DESC, i.sort, i.id LIMIT 1) AS image_url

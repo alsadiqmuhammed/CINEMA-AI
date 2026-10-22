@@ -31,7 +31,7 @@ export function layout({ user, title, body, path = '', counts = {}, flash, setti
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <title>${title} | لوحة التحكم</title>
-  <link rel="preload" href="/static/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/noto-sans-arabic-arabic-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/css/admin.css?v=${config.assetVersion}">
 </head>
 <body>
