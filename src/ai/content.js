@@ -148,7 +148,7 @@ function templateProductContent(product, settings) {
     seo_title: `${product.name} | ${settings.store_name}`.slice(0, 60),
     seo_description: `اشترِ ${product.name} أونلاين من ${settings.store_name} بسعر ${formatMoney(product.price, settings.currency)}. ${settings.policies.shipping}`.slice(0, 155),
     faq: [
-      { q: 'كم مدة التوصيل؟', a: settings.policies.shipping },
+      { q: 'شكد يطول التوصيل؟', a: settings.policies.shipping },
       { q: 'هل يمكنني الاسترجاع؟', a: settings.policies.returns },
       { q: 'ما طرق الدفع المتاحة؟', a: settings.policies.payment },
     ],

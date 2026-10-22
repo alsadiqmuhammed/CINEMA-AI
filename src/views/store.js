@@ -15,10 +15,10 @@ export { GOVERNORATES };
 
 /** Real pictures of Iraqi souqs from open archives; credits are printed in the footer. */
 const SOUQ_PHOTOS = {
-  alley: { src: '/static/img/souq/baghdad-copper-bazaar-1932.jpg', w: 1600, h: 1133, caption: 'سوق الصفافير ببغداد، 1932', credit: 'Matson Collection، ملكية عامة', page: 'https://commons.wikimedia.org/wiki/File:Iraq._(Mesopotamia)._Baghdad._Copper_bazaar_LOC_matpc.13278.tif' },
+  alley: { src: '/static/img/souq/baghdad-copper-bazaar-1932.jpg', w: 1600, h: 1133, caption: 'سوگ الصفافير ببغداد، 1932', credit: 'Matson Collection، ملكية عامة', page: 'https://commons.wikimedia.org/wiki/File:Iraq._(Mesopotamia)._Baghdad._Copper_bazaar_LOC_matpc.13278.tif' },
   creek: { src: '/static/img/souq/basra-ashar-creek-1915.jpg', w: 1400, h: 1038, caption: 'شط العشار وسوگه بالبصرة، حوالي 1915', credit: 'Nationaal Archief، CC0', page: 'https://commons.wikimedia.org/wiki/File:Ashar_Creek_and_Bazaar,_Bestanddeelnr_158-1494.jpg' },
   gold: { src: '/static/img/souq/basra-gold-market-2016.jpg', w: 1024, h: 768, caption: 'سوگ الذهب بالبصرة، 2016', credit: 'David Stanley، CC BY 2.0', page: 'https://commons.wikimedia.org/wiki/File:Basra_Gold_Market_(30363366263).jpg' },
-  painting: { src: '/static/img/souq/copper-bazaar-watercolour.jpg', w: 968, h: 1300, caption: 'سوق الصفافير، لوحة مائية من أيام الحرب العالمية الأولى', credit: 'John Daniel Revel، ملكية عامة', page: 'https://commons.wikimedia.org/wiki/File:The_Copper_Bazaar,_Baghdad_Art.IWMART4041.jpg' },
+  painting: { src: '/static/img/souq/copper-bazaar-watercolour.jpg', w: 968, h: 1300, caption: 'سوگ الصفافير، لوحة مائية من أيام الحرب العالمية الأولى', credit: 'John Daniel Revel، ملكية عامة', page: 'https://commons.wikimedia.org/wiki/File:The_Copper_Bazaar,_Baghdad_Art.IWMART4041.jpg' },
 };
 
 /** Delivery time by governorate, as the shipping policy states it. */
@@ -71,7 +71,7 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
   <meta property="og:title" content="${pageTitle}">
   <meta property="og:description" content="${metaDescription}">
   ${canonical ? html`<meta property="og:url" content="${config.baseUrl}${canonical}">` : ''}
-  <meta property="og:image" content="${ogImage ?? `${config.baseUrl}${SOUQ_PHOTOS.alley.src}`}">
+  <meta property="og:image" content="${ogImage ?? `${config.baseUrl}/static/img/products/gift.jpg`}">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="/static/fonts/noto-sans-arabic-arabic-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -82,7 +82,7 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
   <a class="skip" href="#main">انتقل للمحتوى</a>
   <p class="notice"><span>الدفع عند الاستلام، وتفحص طلبك قبل ما تدفع</span><span>توصيل لكل المحافظات ${shortFee(settings)}</span><span>ترجيع خلال 7 أيام</span><span class="notice-short">دفع عند الاستلام، توصيل ${formatMoney(Number(settings.shipping_fee) || 0, settings.currency)}، ترجيع 7 أيام</span></p>
   <header class="bar">
-    <a class="wordmark" href="/">${settings.store_name}</a>
+    <a class="wordmark" href="/" translate="no">${settings.store_name}</a>
     <nav aria-label="روابط المتجر">
       <a href="/products" ${current('/products')}>المنتجات</a>
       <a href="/offers" ${current('/offers')}>العروض</a>
@@ -131,9 +131,15 @@ export function layout({ settings, title, description, body, cartCount = 0, cano
 // Our own pictures are cached for a week; the version makes a redrawn one show at once.
 const asset = (url) => (url.startsWith('/static/') ? `${url}?v=${config.assetVersion}` : url);
 
-function productImage(p, { lazy = true, w = 800, h = 1000 } = {}) {
+/** Our photographs come in a 480px copy too; the browser picks the size the slot needs. */
+function srcset(url, sizes) {
+  const m = /^(\/static\/img\/products\/[a-z]+)\.webp$/.exec(url ?? '');
+  return m ? raw(`srcset="${asset(`${m[1]}-480.webp`)} 480w, ${asset(url)} 896w" sizes="${sizes}"`) : '';
+}
+
+function productImage(p, { lazy = true, w = 800, h = 1000, sizes = '(max-width: 760px) 50vw, 30vw' } = {}) {
   return p.image_url
-    ? html`<img src="${asset(p.image_url)}" alt="${p.name}" width="${w}" height="${h}" ${lazy ? raw('loading="lazy"') : ''}>`
+    ? html`<img src="${asset(p.image_url)}" ${srcset(p.image_url, sizes)} alt="${p.name}" width="${w}" height="${h}" ${lazy ? raw('loading="lazy"') : raw('fetchpriority="high"')}>`
     : html`<span class="noimg" aria-hidden="true">${p.name.slice(0, 1)}</span>`;
 }
 
@@ -196,7 +202,7 @@ export function home({ settings, categories, newest, onSale, bestSellers, csrf }
   return html`
     <section class="poster" aria-labelledby="hero-title" data-pin="reel">
       <div class="poster-stage">
-        <h1 id="hero-title" class="poster-title">${settings.store_name}</h1>
+        <h1 id="hero-title" class="poster-title" translate="no">${settings.store_name}</h1>
         <div class="poster-foot">
           <p>عطور وعود وبخور وهدايا مختارة. نوصل لكل المحافظات، تفحص طلبك ويه المندوب، وتدفع من يعجبك.</p>
           <a class="btn primary" href="/products">تصفّح المنتجات</a>
@@ -206,7 +212,7 @@ export function home({ settings, categories, newest, onSale, bestSellers, csrf }
           <div class="reel-track">
             ${reel.map((p, i) => html`
               <a class="reel-frame" href="/p/${encodeURIComponent(p.slug)}">
-                <span class="reel-photo">${productImage(p, { lazy: i > 0, w: 1200, h: 900 })}</span>
+                <span class="reel-photo">${productImage(p, { lazy: i > 0, w: 1200, h: 900, sizes: '(max-width: 1000px) 50vw, 34vw' })}</span>
                 <span class="reel-caption"><span>${p.name}</span><span>${formatMoney(p.price, settings.currency)}</span></span>
               </a>`)}
           </div>
@@ -228,7 +234,7 @@ export function home({ settings, categories, newest, onSale, bestSellers, csrf }
                 <span class="cat-photo">${c.image_url ? html`<img src="${asset(c.image_url)}" alt="" width="720" height="380" loading="lazy">` : ''}</span>
                 <span class="cat-panel">
                   <b>${c.name}</b>
-                  <span>${c.product_count} ${c.product_count > 2 && c.product_count < 11 ? 'منتجات' : 'منتج'}، من ${formatMoney(c.min_price, settings.currency)}</span>
+                  <span>${c.product_count >= 5 ? `${c.product_count} ${c.product_count < 11 ? 'منتجات' : 'منتج'}، ` : ''}من ${formatMoney(c.min_price, settings.currency)}</span>
                 </span>
               </a>`)}
           </div>
@@ -311,7 +317,7 @@ export function listing({ settings, heading, intro, items, query, sort, categori
     <div class="listing-tools">
       <form class="search" action="/search" method="get" role="search">
         ${icon.search}
-        <input type="search" name="q" value="${query ?? ''}" placeholder="شنو تدوّر عليه؟" aria-label="بحث في المنتجات">
+        <input type="search" name="q" value="${query ?? ''}" placeholder="شنو تدوّر عليه…" aria-label="بحث في المنتجات">
       </form>
       ${sort && items.length > 1 ? html`
         <form class="sort" method="get">
@@ -346,7 +352,7 @@ export function product({ settings, product: p, related, csrf }) {
     <article class="product">
       <div class="gallery">
         <div class="frame large">
-          ${images.length ? html`<img src="${asset(images[0].url)}" alt="${images[0].alt || p.name}" width="800" height="1000" fetchpriority="high">` : html`<span class="noimg">${p.name.slice(0, 1)}</span>`}
+          ${images.length ? html`<img src="${asset(images[0].url)}" ${srcset(images[0].url, '(max-width: 760px) 100vw, 50vw')} alt="${images[0].alt || p.name}" width="800" height="1000" fetchpriority="high">` : html`<span class="noimg">${p.name.slice(0, 1)}</span>`}
         </div>
         ${images.length > 1 ? html`<div class="thumbs">${images.map((img, i) => html`<button type="button" class="thumb ${i ? '' : 'current'}" data-src="${asset(img.url)}" aria-label="عرض الصورة ${i + 1}"><img src="${asset(img.url)}" alt="" loading="lazy"></button>`)}</div>` : ''}
       </div>
@@ -429,7 +435,7 @@ export function cart({ settings, view, csrf, error, suggestions = [] }) {
       <ul class="cart-items">
         ${items.map((item) => html`
           <li class="cart-line">
-            <a href="/p/${encodeURIComponent(item.slug)}" class="cart-thumb">${item.image_url ? html`<img src="${asset(item.image_url)}" alt="">` : ''}</a>
+            <a href="/p/${encodeURIComponent(item.slug)}" class="cart-thumb" aria-label="${item.name}">${item.image_url ? html`<img src="${asset(item.image_url)}" alt="" width="72" height="90" loading="lazy">` : ''}</a>
             <div class="grow">
               <a class="cart-name" href="/p/${encodeURIComponent(item.slug)}">${item.name}</a>
               <div class="muted">${formatMoney(item.price, settings.currency)}</div>
@@ -482,7 +488,7 @@ export function checkout({ settings, view, csrf, error, values = {} }) {
           <legend>معلوماتك</legend>
           <label>الاسم <input name="name" required autocomplete="name" value="${values.name ?? ''}"></label>
           <label>رقم الهاتف <input name="phone" type="tel" required inputmode="tel" autocomplete="tel" dir="ltr" placeholder="07XX XXX XXXX" pattern="[\s\d+٠-٩]{10,16}" title="رقم موبايل عراقي، مثل 07701234567" value="${values.phone ?? ''}"></label>
-          <label><span>البريد الإلكتروني <span class="optional">(اختياري)</span></span><input name="email" type="email" autocomplete="email" dir="ltr" value="${values.email ?? ''}"></label>
+          <label><span>البريد الإلكتروني <span class="optional">(اختياري)</span></span><input name="email" type="email" autocomplete="email" spellcheck="false" dir="ltr" value="${values.email ?? ''}"></label>
         </fieldset>
         <fieldset>
           <legend>وين نوصلك؟</legend>
@@ -502,12 +508,12 @@ export function checkout({ settings, view, csrf, error, values = {} }) {
           ${settings.bank_details ? html`<label class="choice"><input type="radio" name="payment_method" value="bank_transfer" ${values.payment_method === 'bank_transfer' ? raw('checked') : ''}> ${PAYMENT_METHODS.bank_transfer}</label>` : ''}
         </fieldset>
         <label class="check"><input type="checkbox" name="marketing_opt_in" value="1" ${values.marketing_opt_in ? raw('checked') : ''}> دزّولي العروض على واتساب</label>
-        <button class="btn primary block" type="submit">أكّد الطلب، ${formatMoney(view.total, settings.currency)}</button>
+        <button class="btn primary block" type="submit" data-busy="نأكد طلبك…">أكّد الطلب، ${formatMoney(view.total, settings.currency)}</button>
         <p class="hint">بتأكيد الطلب أنت توافق على <a href="/policies">سياسات المتجر</a>.</p>
       </form>
       <aside class="summary">
         <h2>طلبك</h2>
-        ${view.items.map((i) => html`<div class="row line"><span class="cart-thumb small">${i.image_url ? html`<img src="${asset(i.image_url)}" alt="">` : ''}</span><span class="grow">${i.name} × ${i.quantity}</span><span>${formatMoney(i.price * i.quantity, settings.currency)}</span></div>`)}
+        ${view.items.map((i) => html`<div class="row line"><span class="cart-thumb small">${i.image_url ? html`<img src="${asset(i.image_url)}" alt="" width="40" height="50" loading="lazy">` : ''}</span><span class="grow">${i.name} × ${i.quantity}</span><span>${formatMoney(i.price * i.quantity, settings.currency)}</span></div>`)}
         <div class="row"><span>التوصيل</span><span>${view.shipping ? formatMoney(view.shipping, settings.currency) : 'مجاني'}</span></div>
         <div class="row total"><span>الإجمالي</span><span>${formatMoney(view.total, settings.currency)}</span></div>
       </aside>
@@ -543,8 +549,8 @@ export function track({ order, values = {}, notFound, error, csrf }) {
     <p class="lead">رقم الطلب يطلعلك بصفحة التأكيد بعد ما تطلب، وبرسالة الواتساب إذا وصلتك. اكتبه ويه رقم الهاتف اللي طلبت بيه.</p>
     <form method="post" action="/track" class="form inline-form">
       <input type="hidden" name="_csrf" value="${csrf}">
-      <label>رقم الطلب <input name="number" required dir="ltr" placeholder="مثل 7K2QX9P" value="${values.number ?? ''}"></label>
-      <label>رقم الهاتف <input name="phone" required dir="ltr" inputmode="tel" placeholder="07XX XXX XXXX" value="${values.phone ?? ''}"></label>
+      <label>رقم الطلب <input name="number" required dir="ltr" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="7K2QX9P" aria-describedby="number-hint" value="${values.number ?? ''}"><span class="optional" id="number-hint">7 حروف وأرقام، مثل 7K2QX9P</span></label>
+      <label>رقم الهاتف <input name="phone" type="tel" required dir="ltr" inputmode="tel" autocomplete="tel" placeholder="07XX XXX XXXX" value="${values.phone ?? ''}"></label>
       <button class="btn primary" type="submit">تتبع</button>
     </form>
     ${error ? html`<p class="alert" role="alert">${error}</p>` : ''}

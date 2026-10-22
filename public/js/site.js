@@ -201,6 +201,19 @@
     });
   }
 
+  // The order button says it is working and cannot be pressed twice.
+  document.querySelectorAll('[data-busy]').forEach((button) => {
+    button.form?.addEventListener('submit', () => {
+      setTimeout(() => { button.disabled = true; button.textContent = button.dataset.busy; });
+    });
+  });
+
+  // The chat button steps aside at the footer, where its links already are.
+  const footer = document.querySelector('.footer');
+  if (footer && 'IntersectionObserver' in window) {
+    new IntersectionObserver(([e]) => document.querySelector('.chat-fab')?.classList.toggle('away', e.isIntersecting)).observe(footer);
+  }
+
   // Copy the order number.
   document.querySelectorAll('[data-copy]').forEach((button) => {
     button.addEventListener('click', async () => {

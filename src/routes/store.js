@@ -117,11 +117,14 @@ store.get('/p/:slug', async (req, res) => {
   const settings = await getSettings();
   let related = await products.recommendations(product.id);
   // A product page never ends empty: with nothing related, show the newest others.
-  if (!related.length) related = (await products.listActive({ limit: 5 })).filter((p) => p.id !== product.id).slice(0, 3);
+  if (!related.length) related = (await products.listActive({ limit: 5 })).filter((p) => p.id !== product.id);
+  // Full rows only: four across on a desktop, two on a phone.
+  related = related.slice(0, related.length >= 4 ? 4 : 2);
   await render(req, res, views.product, {
     product,
     related,
     meta: {
+      ogImage: product.images[0] ? `${config.baseUrl}${product.images[0].url.replace(/\.webp$/, '.jpg')}` : undefined,
       title: product.seo_title || product.name,
       description: product.seo_description || product.description.slice(0, 155),
       canonical: `/p/${product.slug}`,
