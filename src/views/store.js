@@ -21,6 +21,20 @@ const icon = {
 
 export { GOVERNORATES };
 
+// Letters that join on both sides; a kashida may follow them when the next letter is not an alef (لا keeps its ligature).
+const JOINS = /[بتثجحخسشصضطظعغفقكلمنهيئگپچڤ]/;
+const ALEFS = /[اأإآ]/;
+/** Stretches one display word with a kashida near its middle (سـوگ، الأحـدث). Display only: never product names or search text. */
+function kashida(word, length = 3) {
+  const letters = [...word];
+  const spots = letters.map((ch, i) => i).filter((i) => i < letters.length - 1 && JOINS.test(letters[i]) && /[\u0621-\u06FF]/.test(letters[i + 1]) && !ALEFS.test(letters[i + 1]));
+  if (!spots.length) return word;
+  const middle = (letters.length - 1) / 2;
+  const at = spots.reduce((best, i) => (Math.abs(i - middle) < Math.abs(best - middle) ? i : best));
+  letters.splice(at + 1, 0, 'ـ'.repeat(length));
+  return letters.join('');
+}
+
 /** Delivery time by governorate, as the shipping policy states it. */
 function deliveryDays(governorate) {
   return governorate === 'بغداد' ? 'خلال يوم أو يومين' : 'خلال 2 إلى 4 أيام';
@@ -190,12 +204,20 @@ export function grid(items, currency, options = {}) {
   return html`<div class="grid">${items.map((p) => productCard(p, currency, options))}</div>`;
 }
 
+/** The bold first word of a shelf title gets the kashida: "الأحـــدث." */
+function stretchLead(lead) {
+  const [first, ...rest] = lead.split(' ');
+  const word = first.replace(/[.،]$/, '');
+  // Short words like "قد" read badly stretched.
+  return [([...word].length >= 4 ? kashida(word) : word) + first.slice(word.length), ...rest].join(' ');
+}
+
 /** A row of cards that scrolls sideways, with arrows on wide screens (Apple's store shelf). */
 function shelf({ id, lead, rest, items, more }) {
   return html`
     <section class="shelf" aria-labelledby="${id}">
       <div class="shelf-head">
-        <h2 class="shelf-title" id="${id}"><b>${lead}</b> ${rest}</h2>
+        <h2 class="shelf-title" id="${id}"><b>${stretchLead(lead)}</b> ${rest}</h2>
         ${more ?? ''}
       </div>
       <div class="shelf-row" data-shelf tabindex="0" aria-label="${lead}">${items}</div>
@@ -223,7 +245,7 @@ export function home({ settings, categories, newest, onSale, bestSellers, csrf }
   ];
   return html`
     <section class="store-head">
-      <h1 class="store-title" translate="no">${settings.store_name}</h1>
+      <h1 class="store-title" translate="no" aria-label="${settings.store_name}">${kashida(settings.store_name, 2)}</h1>
       <div class="store-pitch">
         <p>أحلى طريقة تشتري بيها العطور والعود والهدايا.</p>
         <button type="button" class="more" data-open-chat>اسأل مختص</button>
@@ -257,14 +279,14 @@ export function home({ settings, categories, newest, onSale, bestSellers, csrf }
 
     <section class="help">
       <div class="help-card">
-        <h2>عندك سؤال؟ <span>احجي ويانا.</span></h2>
+        <h2>عندك سؤال؟ <span>${kashida('احجي')} ويانا.</span></h2>
         <p>مساعدنا يرد بثواني على الأسعار والتوفّر وطلبك. وإذا تريد موظف، يحوّلك لواحد من الفريق.</p>
         <div class="help-actions"><button type="button" class="btn primary" data-open-chat>ابدي المحادثة</button><a class="btn" href="/track">تتبع طلبك</a></div>
       </div>
     </section>
 
     <section class="faq-home" aria-labelledby="faq-title">
-      <h2 class="shelf-title" id="faq-title"><b>أسئلة الزبائن.</b></h2>
+      <h2 class="shelf-title" id="faq-title"><b>${stretchLead('أسئلة الزبائن.')}</b></h2>
       <details><summary>شلون أدفع؟</summary><p>${settings.policies.payment}</p></details>
       <details><summary>إذا ما عجبني، أكدر أرجّعه؟</summary><p>${settings.policies.returns}</p></details>
       <details><summary>شلون أتابع طلبي؟</summary><p>من <a href="/track">تتبع طلبك</a> برقم الطلب ورقم هاتفك، أو اسألنا بالمحادثة.</p></details>
