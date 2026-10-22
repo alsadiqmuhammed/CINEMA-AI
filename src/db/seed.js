@@ -76,7 +76,7 @@ export async function seed({ demo = !config.isProduction, catalog = demo || proc
         JSON.stringify([{ q: 'كم مدة التوصيل؟', a: 'من 1 إلى 2 يوم داخل بغداد، ومن 2 إلى 4 أيام لباقي المحافظات.' }])],
     );
     productIds[p.image] = row.id;
-    await db.query('INSERT INTO product_images (product_id, url, alt) VALUES ($1, $2, $3)', [row.id, `/static/img/demo-${p.image}.svg`, p.name]);
+    await db.query('INSERT INTO product_images (product_id, url, alt) VALUES ($1, $2, $3)', [row.id, `/static/img/products/${p.image}.jpg`, p.name]);
   }
   const relate = async (a, b, kind) => db.query('INSERT INTO product_relations (product_id, related_id, kind) VALUES ($1, $2, $3)', [productIds[a], productIds[b], kind]);
   await relate('perfume', 'candle', 'complement');
