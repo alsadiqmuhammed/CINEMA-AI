@@ -1,12 +1,12 @@
 (() => {
   const root = document.getElementById('chat-root');
   if (!root) return;
-  const storeName = document.querySelector('.brand')?.textContent.trim() || 'المتجر';
+  const storeName = document.querySelector('.wordmark')?.textContent.trim() || 'المتجر';
 
   root.innerHTML = `
     <button class="chat-fab" type="button" aria-expanded="false" aria-controls="chat-panel">
       <span class="dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></span>
-      <span class="label">تحتاج مساعدة؟</span>
+      <span class="label">اسألنا</span>
     </button>
     <section class="chat-panel" id="chat-panel" role="dialog" aria-label="المحادثة مع المساعد">
       <div class="chat-head"><div><strong></strong><small>مساعد آلي يجاوبك فوراً، ويحوّلك لموظف من تحتاج</small></div><button type="button" aria-label="إغلاق المحادثة">×</button></div>
@@ -76,10 +76,15 @@
   }
 
   fab.addEventListener('click', () => open(!panel.classList.contains('open')));
-  root.querySelector('.chat-head button').addEventListener('click', () => open(false));
-  // Any "ask the assistant" button on the page opens the same panel.
+  const close = () => { open(false); fab.focus(); };
+  root.querySelector('.chat-head button').addEventListener('click', close);
+  panel.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
+  // Any "ask the assistant" button on the page opens the same panel, with its question ready to send.
   document.addEventListener('click', (event) => {
-    if (event.target.closest('[data-open-chat]')) open(true);
+    const asker = event.target.closest('[data-open-chat]');
+    if (!asker) return;
+    open(true);
+    if (asker.dataset.ask) input.value = asker.dataset.ask;
   });
 
   // The "added to cart" toast comes from ?added=1; drop it from the address so a refresh doesn't repeat it.

@@ -18,10 +18,12 @@ export async function getOrCreate(cartToken, source = 'web') {
   return (await findOpen(cartToken)) ?? create(source);
 }
 
-export async function setItem(cartId, productId, quantity, { add = false } = {}) {
+export async function setItem(cartId, productId, quantity, { add = false, onlyExisting = false } = {}) {
   const product = await db.one(`SELECT id, stock FROM products WHERE id = $1 AND status = 'active'`, [productId]);
   if (!product) throw new Error('المنتج غير متوفر');
   const current = await db.one('SELECT quantity FROM cart_items WHERE cart_id = $1 AND product_id = $2', [cartId, productId]);
+  // Changing a quantity never brings in a product that is not already in the cart.
+  if (onlyExisting && !current) return 0;
   let next = add ? (current?.quantity ?? 0) + quantity : quantity;
   next = Math.min(next, MAX_QUANTITY, product.stock);
   if (next <= 0) {

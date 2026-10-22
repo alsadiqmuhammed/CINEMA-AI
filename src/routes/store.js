@@ -54,7 +54,17 @@ const trackLimiter = new RateLimiter({ name: 'track-ip', limit: 20, windowMs: 15
 const contactLimiter = new RateLimiter({ name: 'contact-ip', limit: 10, windowMs: 3_600_000 });
 const TOO_MANY = 'محاولات كثيرة من نفس الجهاز. انتظر شوية وحاول مرة ثانية، أو احجي ويانا بالمحادثة.';
 
+const CART_ERRORS = { unavailable: 'هذا المنتج مو متوفر هسة، أو خلصت كميته.' };
+
 const sortOf = (req) => (products.SORTS[req.query.sort] ? req.query.sort : 'new');
+
+// Listings come a page at a time; one extra row tells whether there is a next page.
+const PER_PAGE = 24;
+async function paged(req, query) {
+  const page = Math.max(1, Math.min(200, Math.trunc(Number(req.query.page)) || 1));
+  const rows = await products.listActive({ ...query, limit: PER_PAGE + 1, offset: (page - 1) * PER_PAGE });
+  return { items: rows.slice(0, PER_PAGE), page, hasNext: rows.length > PER_PAGE };
+}
 
 function setCart(res, cart) {
   res.cookie(CART_COOKIE, cart.token, { ...cookieOptions, maxAge: 30 * 86_400_000 });
@@ -74,24 +84,24 @@ store.get('/', async (req, res) => {
 
 store.get('/products', async (req, res) => {
   const sort = sortOf(req);
-  const items = await products.listActive({ sort, limit: 120 });
-  await render(req, res, views.listing, { heading: 'كل المنتجات', items, sort, meta: { title: 'كل المنتجات', canonical: '/products' } });
+  const list = await paged(req, { sort });
+  await render(req, res, views.listing, { heading: 'كل المنتجات', ...list, sort, meta: { title: 'كل المنتجات', canonical: '/products' } });
 });
 
 store.get('/offers', async (req, res) => {
   const sort = sortOf(req);
-  const items = await products.listActive({ onSale: true, sort, limit: 120 });
+  const list = await paged(req, { onSale: true, sort });
   await render(req, res, views.listing, {
-    heading: 'العروض', intro: 'منتجات سعرها هسة أقل من سعرها المعتاد، لحد ما تخلص الكمية.', items, sort, meta: { title: 'العروض', canonical: '/offers' },
+    heading: 'العروض', intro: 'منتجات سعرها هسة أقل من سعرها المعتاد، لحد ما تخلص الكمية.', ...list, sort, meta: { title: 'العروض', canonical: '/offers' },
   });
 });
 
 store.get('/c/:slug', async (req, res) => {
   const category = (await products.categories()).find((c) => c.slug === req.params.slug);
-  if (!category) return render(req, res, views.notFound, { status: 404 });
+  if (!category) return render(req, res, views.notFound, { status: 404, meta: { title: 'الصفحة غير موجودة' } });
   const sort = sortOf(req);
-  const items = await products.listActive({ categorySlug: category.slug, sort, limit: 120 });
-  await render(req, res, views.listing, { heading: category.name, items, sort, currentCategory: category.slug, meta: { title: category.name, canonical: `/c/${category.slug}` } });
+  const list = await paged(req, { categorySlug: category.slug, sort });
+  await render(req, res, views.listing, { heading: category.name, ...list, sort, currentCategory: category.slug, meta: { title: category.name, canonical: `/c/${category.slug}` } });
 });
 
 store.get('/search', async (req, res) => {
@@ -103,7 +113,7 @@ store.get('/search', async (req, res) => {
 
 store.get('/p/:slug', async (req, res) => {
   const product = await products.getBySlug(req.params.slug);
-  if (!product) return render(req, res, views.notFound, { status: 404 });
+  if (!product) return render(req, res, views.notFound, { status: 404, meta: { title: 'الصفحة غير موجودة' } });
   const settings = await getSettings();
   const related = await products.recommendations(product.id);
   await render(req, res, views.product, {
@@ -120,7 +130,9 @@ store.get('/p/:slug', async (req, res) => {
 
 store.get('/cart', async (req, res) => {
   const view = await carts.view(await carts.findOpen(req.cookies[CART_COOKIE]));
-  await render(req, res, views.cart, { view, error: req.query.error, meta: { title: 'السلة' } });
+  // An empty cart suggests where to start instead of ending the visit.
+  const suggestions = view.items.length ? [] : await products.listActive({ limit: 3 });
+  await render(req, res, views.cart, { view, suggestions, error: CART_ERRORS[req.query.error], meta: { title: 'السلة' } });
 });
 
 // Links sent by the chat assistant and cart reminders open that cart in the browser.
@@ -134,7 +146,11 @@ store.post('/cart/add', async (req, res) => {
   const cart = await carts.getOrCreate(req.cookies[CART_COOKIE]);
   setCart(res, cart);
   try {
-    await carts.setItem(cart.id, Number(req.body.product_id), Math.max(1, Number(req.body.quantity) || 1), { add: true });
+    await carts.setItem(cart.id, Math.trunc(Number(req.body.product_id)) || 0, Math.max(1, Math.trunc(Number(req.body.quantity)) || 1), { add: true });
+    // The page's script adds without leaving the page; it only needs the new count.
+    if (req.get('X-Requested-With') === 'fetch') {
+      return res.json({ count: (await carts.lines(cart.id)).reduce((n, i) => n + i.quantity, 0) });
+    }
     // Stay where the shopper was and confirm with a toast; without a page to return to, open the cart.
     const back = safeBack(req.body.back);
     if (!back) return res.redirect('/cart');
@@ -142,7 +158,8 @@ store.post('/cart/add', async (req, res) => {
     url.searchParams.set('added', '1');
     res.redirect(url.pathname + url.search + url.hash);
   } catch (error) {
-    res.redirect(`/cart?error=${encodeURIComponent(error.message)}`);
+    if (req.get('X-Requested-With') === 'fetch') return res.status(422).json({ error: CART_ERRORS.unavailable });
+    res.redirect('/cart?error=unavailable');
   }
 });
 
@@ -152,7 +169,7 @@ store.post('/cart/update', async (req, res) => {
     // A typo ("abc", -5) must not empty the line; only a real number changes it (0 removes it).
     const quantity = Number(req.body.quantity);
     if (Number.isFinite(quantity)) {
-      await carts.setItem(cart.id, Number(req.body.product_id), Math.max(0, Math.trunc(quantity))).catch(() => {});
+      await carts.setItem(cart.id, Number(req.body.product_id), Math.max(0, Math.trunc(quantity)), { onlyExisting: true }).catch(() => {});
     }
   }
   res.redirect('/cart');
@@ -166,6 +183,14 @@ store.get('/checkout', async (req, res) => {
 
 store.post('/checkout', async (req, res) => {
   const cartToken = req.cookies[CART_COOKIE];
+  try {
+    orders.checkForm(req.body);
+  } catch (error) {
+    if (!(error instanceof orders.OrderError)) throw error;
+    const view = await carts.view(await carts.findOpen(cartToken));
+    if (!view.items.length) return res.redirect('/cart');
+    return render(req, res, views.checkout, { view, error: error.message, values: req.body, status: 422, meta: { title: 'إتمام الطلب' } });
+  }
   if (!(await checkoutLimiter.take(req.ip))) {
     const view = await carts.view(await carts.findOpen(cartToken));
     if (!view.items.length) return res.redirect('/cart');
@@ -198,7 +223,7 @@ function orderViewToken(order) {
 
 store.get('/order/:number', async (req, res) => {
   const order = await orders.getByNumber(req.params.number);
-  if (!order || req.query.t !== orderViewToken(order)) return render(req, res, views.notFound, { status: 404 });
+  if (!order || req.query.t !== orderViewToken(order)) return render(req, res, views.notFound, { status: 404, meta: { title: 'الصفحة غير موجودة' } });
   await render(req, res, views.orderPlaced, { order, meta: { title: 'تم استلام طلبك' } });
 });
 

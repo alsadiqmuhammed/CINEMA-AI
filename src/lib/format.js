@@ -91,3 +91,8 @@ export const CHANNELS = {
   messenger: 'ماسنجر',
   instagram: 'انستقرام',
 };
+
+export const GOVERNORATES = ['بغداد', 'البصرة', 'نينوى', 'أربيل', 'النجف', 'كربلاء', 'بابل', 'ذي قار', 'ميسان', 'واسط', 'القادسية', 'المثنى', 'ديالى', 'الأنبار', 'صلاح الدين', 'كركوك', 'السليمانية', 'دهوك'];
+
+/** An Iraqi mobile number after normalizePhone: 964 7X XXXXXXXX. */
+export const isIraqiMobile = (phone) => /^9647[3-9]\d{8}$/.test(phone ?? '');

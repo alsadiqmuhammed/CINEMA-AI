@@ -1,7 +1,7 @@
 import { randomInt } from 'node:crypto';
 import { db, transaction } from '../db/pool.js';
 import { audit } from '../lib/audit.js';
-import { normalizePhone, ORDER_STATUS, round3 } from '../lib/format.js';
+import { GOVERNORATES, isIraqiMobile, normalizePhone, ORDER_STATUS, round3 } from '../lib/format.js';
 import * as carts from './carts.js';
 import * as customers from './customers.js';
 import * as alerts from './alerts.js';
@@ -40,13 +40,21 @@ function orderNumber() {
 // One number can have only this many orders waiting for the store's confirmation call.
 export const MAX_UNCONFIRMED_PER_PHONE = 2;
 
-export async function placeOrder(cartToken, form, { actor = { type: 'customer' } } = {}) {
+/** The checks a shopper's form must pass, before anything is counted or locked. */
+export function checkForm(form, { actor = { type: 'customer' } } = {}) {
   const phone = normalizePhone(form.phone);
-  if (!phone) throw new OrderError('رقم الهاتف غير صحيح');
+  // Cash on delivery goes to a courier who calls first: a customer's number must be an Iraqi mobile.
+  if (!phone || (actor.type === 'customer' && !isIraqiMobile(phone))) throw new OrderError('رقم الهاتف غير صحيح، اكتب رقم موبايل عراقي مثل 07701234567');
   for (const field of ['name', 'city', 'address']) {
     if (!String(form[field] ?? '').trim()) throw new OrderError('يرجى تعبئة الاسم والمحافظة والعنوان');
   }
+  if (actor.type === 'customer' && !GOVERNORATES.includes(String(form.city).trim())) throw new OrderError('اختار محافظتك من القائمة');
   if (!['cod', 'bank_transfer'].includes(form.payment_method)) throw new OrderError('طريقة الدفع غير متاحة');
+  return phone;
+}
+
+export async function placeOrder(cartToken, form, { actor = { type: 'customer' } } = {}) {
+  const phone = checkForm(form, { actor });
   const settings = await getSettings();
 
   const order = await transaction(async (tx) => {
